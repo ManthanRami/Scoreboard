@@ -23,7 +23,7 @@
 </script>
 
 <svelte:head>
-  {@html pwaInfo?.webManifest.linkTag}
+  {@html pwaInfo?.webManifest?.linkTag}
   <title>Scoreboard Hub</title>
   <link rel="icon" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

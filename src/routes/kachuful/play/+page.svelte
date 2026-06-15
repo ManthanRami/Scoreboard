@@ -17,12 +17,22 @@
   const currentCards = $derived(kachuful.state ? getCardsForRound(kachuful.state.currentRound, kachuful.state.maxCards) : 0);
 
   function addRound() {
-    kachuful.submitRound(roundEntries);
-    roundEntries = kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || [];
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (kachuful.submitRound(roundEntries)) {
+      roundEntries = kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || [];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
-  const isRoundValid = $derived(roundEntries.every(e => e.tricks <= currentCards));
+  const totalTricks = $derived(roundEntries.reduce((sum, entry) => sum + entry.tricks, 0));
+  const isRoundValid = $derived(totalTricks === currentCards && roundEntries.every(e => e.bid <= currentCards && e.tricks <= currentCards));
+
+  function undoRound() {
+    if (window.confirm('Undo the last Kachuful round?')) {
+      kachuful.undoLastRound();
+      roundEntries = kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || [];
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 </script>
 
 {#if kachuful.state}
@@ -43,7 +53,7 @@
         <Trophy size={48} class="text-gold mx-auto" />
         <h2 class="text-display-md">Winner!</h2>
         <p class="text-display-lg text-gold">{kachuful.state.winnerName}</p>
-        <button 
+        <button
           onclick={() => kachuful.reset()}
           class="px-6 py-2 bg-gold text-background rounded-full font-bold"
         >
@@ -68,26 +78,43 @@
                 {#if roundEntries[i].bid === roundEntries[i].tricks}
                   <ScoreBadge score="+{10 + roundEntries[i].bid}" status="success" />
                 {:else}
-                  <ScoreBadge score="{kachuful.state.negativePenalty}" status="danger" />
+                  <ScoreBadge score={kachuful.state.negativePenalty} status="danger" />
                 {/if}
               </div>
             </div>
           {/each}
         </div>
 
-        <button 
-          onclick={addRound}
-          disabled={!isRoundValid}
-          class="w-full p-5 bg-primary text-white rounded-2xl text-title-md font-bold transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
-        >
-          <Plus size={24} /> Submit Round
-        </button>
+        <div class="space-y-3">
+          {#if kachuful.hasSubmittedRounds}
+            <button
+              onclick={undoRound}
+              class="w-full p-4 bg-surface-variant hover:bg-surface border border-border rounded-2xl text-label-lg font-bold transition-colors"
+            >
+              Undo Last Round
+            </button>
+          {/if}
+
+          <button
+            onclick={addRound}
+            disabled={!isRoundValid}
+            class="w-full p-5 bg-primary text-white rounded-2xl text-title-md font-bold transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
+          >
+            <Plus size={24} /> Submit Round
+          </button>
+        </div>
+
+        {#if !isRoundValid}
+          <p class="text-center text-warning text-label-sm flex items-center justify-center gap-1">
+            Total tricks must equal {currentCards} for this round.
+          </p>
+        {/if}
       </section>
     {/if}
 
     <section class="space-y-4 mt-8">
       <h3 class="text-title-lg">Standings</h3>
-      <RaceChart players={kachuful.state.players} />
+      <RaceChart players={kachuful.state.players} sortMode="high-to-low" />
     </section>
 
     <section class="space-y-4 mt-8">

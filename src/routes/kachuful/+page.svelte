@@ -22,6 +22,10 @@
   });
 
   function start() {
+    if (kachuful.state && !window.confirm('Start a new Kachuful game? Your current Kachuful game will be discarded.')) {
+      return;
+    }
+
     kachuful.startGame(playerNames, deckCount, negativePenalty);
     goto('/kachuful/play');
   }

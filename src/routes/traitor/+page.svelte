@@ -27,6 +27,10 @@
   const isValid = $derived(civilianCount >= 1 && mafiaCount < (playerCount - mafiaCount));
 
   function start() {
+    if (traitor.state && !window.confirm('Start a new Traitor game? Your current Traitor game will be discarded.')) {
+      return;
+    }
+
     traitor.startGame(playerNames, {
       [TraitorRole.Mafia]: mafiaCount,
       [TraitorRole.Detective]: detectiveCount,

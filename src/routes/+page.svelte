@@ -1,6 +1,10 @@
 <script lang="ts">
   import GameCard from '$lib/components/GameCard.svelte';
   import { Spade, Heart, Drama } from '@lucide/svelte';
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { Trophy, Calendar, User, ArrowRight } from '@lucide/svelte';
+  import { loadGameHistory, formatCompletedDate, type CompletedGame } from '$lib/history';
 
   const games = [
     {
@@ -28,11 +32,39 @@
       colorClass: 'text-traitor'
     }
   ];
+
+  let history = $state<CompletedGame[]>([]);
+
+  onMount(() => {
+    history = loadGameHistory().slice(0, 3);
+  });
+
+  function roundCount(game: CompletedGame): number {
+    if (game.gameType === 'traitor') return game.currentRound ?? 0;
+    const firstPlayer = game.players[0];
+    if (firstPlayer && 'rounds' in firstPlayer && Array.isArray(firstPlayer.rounds)) {
+      return (firstPlayer.rounds as unknown[]).length;
+    }
+    return game.rounds?.length ?? 0;
+  }
+
+  function winnerLabel(game: CompletedGame): string {
+    if (game.winnerName) return game.winnerName;
+    if (game.winner === 'town') return 'Town Won';
+    if (game.winner === 'mafia') return 'Mafia Won';
+    return 'Completed';
+  }
+
+  const gameColors: Record<string, string> = {
+    kachuful: 'text-kachuful',
+    hearts: 'text-hearts',
+    traitor: 'text-traitor'
+  };
 </script>
 
 <div class="space-y-4">
   <div class="mb-8">
-    <h2 class="text-display-md">Ready for game night?</h2>
+    <h2 class="text-title-lg text-text-secondary">Ready for game night?</h2>
   </div>
 
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -42,10 +74,48 @@
   </div>
 
   <section class="mt-12">
-    <h2 class="text-title-lg">Recent Games</h2>
-    <div class="p-8 rounded-2xl bg-surface/50 border border-dashed border-border flex flex-col items-center justify-center text-center">
-      <p class="text-body-md">No recent games yet.</p>
-      <p class="text-body-md">Start a new game to see it here.</p>
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-title-lg">Recent Games</h2>
+      {#if history.length > 0}
+        <button onclick={() => goto('/history')} class="text-label-sm text-primary flex items-center gap-1">
+          View all <ArrowRight size={14} />
+        </button>
+      {/if}
     </div>
+
+    {#if history.length === 0}
+      <div class="p-8 rounded-2xl bg-surface/50 border border-dashed border-border flex flex-col items-center justify-center text-center space-y-3">
+        <Calendar size={44} class="text-text-secondary opacity-30" />
+        <p class="text-body-md">No completed games yet.</p>
+        <p class="text-body-md">Start a new game to see it here.</p>
+      </div>
+    {:else}
+      <div class="space-y-4">
+        {#each history as game}
+          <button
+            onclick={() => goto('/history')}
+            class="w-full p-6 rounded-2xl bg-surface border border-border text-left hover:border-primary/50 transition-colors"
+          >
+            <div class="flex justify-between items-start gap-4">
+              <div class="space-y-1">
+                <h3 class="text-title-md capitalize {gameColors[game.gameType]}">{game.gameType}</h3>
+                <p class="text-label-sm text-text-secondary flex items-center gap-1">
+                  <Calendar size={12} /> {formatCompletedDate(game.completedAt)}
+                </p>
+              </div>
+              <div class="bg-gold/10 text-gold px-3 py-1 rounded-full text-label-sm font-bold border border-gold/20 flex items-center gap-1">
+                <Trophy size={14} /> {winnerLabel(game)}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 text-body-md text-text-secondary mt-4">
+              <span class="flex items-center gap-1"><User size={14} /> {game.players.length} Players</span>
+              <span>•</span>
+              <span>{roundCount(game)} Rounds</span>
+            </div>
+          </button>
+        {/each}
+      </div>
+    {/if}
   </section>
 </div>

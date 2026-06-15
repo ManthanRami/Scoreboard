@@ -18,10 +18,20 @@
   const currentTotal = $derived(roundScores.reduce((a, b) => a + b, 0));
 
   function addRound() {
-    hearts.submitRound(roundScores, moonShooterIndex);
-    roundScores = hearts.state?.players.map(() => 0) || [];
-    moonShooterIndex = null;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (hearts.submitRound(roundScores, moonShooterIndex)) {
+      roundScores = hearts.state?.players.map(() => 0) || [];
+      moonShooterIndex = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function undoRound() {
+    if (window.confirm('Undo the last Hearts round?')) {
+      hearts.undoLastRound();
+      roundScores = hearts.state?.players.map(() => 0) || [];
+      moonShooterIndex = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function toggleMoon(index: number) {
@@ -49,7 +59,7 @@
         <Trophy size={48} class="text-gold mx-auto" />
         <h2 class="text-display-md">Winner!</h2>
         <p class="text-display-lg text-gold">{hearts.state.winnerName}</p>
-        <button 
+        <button
           onclick={() => hearts.reset()}
           class="px-6 py-2 bg-gold text-background rounded-full font-bold"
         >
@@ -62,7 +72,7 @@
           <h3 class="text-title-lg">Who shot the moon?</h3>
           <div class="flex flex-wrap gap-2">
             {#each hearts.state.players as player, i}
-              <button 
+              <button
                 onclick={() => toggleMoon(i)}
                 class="px-4 py-2 rounded-xl border text-label-sm font-bold transition-all"
                 class:bg-hearts={moonShooterIndex === i}
@@ -108,20 +118,31 @@
             <div>
               <p class="text-title-md font-bold text-hearts">Moon Shot!</p>
               <p class="text-body-md">
-                {hearts.state.players[moonShooterIndex].name} scores 0. 
+                {hearts.state.players[moonShooterIndex].name} scores 0.
                 Everyone else gets +{maxRoundPoints} pts.
               </p>
             </div>
           </div>
         {/if}
 
-        <button 
-          onclick={addRound}
-          disabled={!isRoundValid}
-          class="w-full p-5 bg-hearts text-white rounded-2xl text-title-md font-bold transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
-        >
-          <Plus size={24} /> Submit Round
-        </button>
+        <div class="space-y-3">
+          {#if hearts.hasSubmittedRounds}
+            <button
+              onclick={undoRound}
+              class="w-full p-4 bg-surface-variant hover:bg-surface border border-border rounded-2xl text-label-lg font-bold transition-colors"
+            >
+              Undo Last Round
+            </button>
+          {/if}
+
+          <button
+            onclick={addRound}
+            disabled={!isRoundValid}
+            class="w-full p-5 bg-hearts text-white rounded-2xl text-title-md font-bold transition-all active:scale-95 flex justify-center items-center gap-2 disabled:opacity-50"
+          >
+            <Plus size={24} /> Submit Round
+          </button>
+        </div>
 
         {#if !isRoundValid && moonShooterIndex === null}
           <p class="text-center text-warning text-label-sm flex items-center justify-center gap-1">
@@ -133,7 +154,7 @@
 
     <section class="space-y-4 mt-8">
       <h3 class="text-title-lg">Standings (Lowest wins)</h3>
-      <RaceChart players={hearts.state.players} />
+      <RaceChart players={hearts.state.players} sortMode="low-to-high" />
     </section>
 
     <section class="space-y-4 mt-8">

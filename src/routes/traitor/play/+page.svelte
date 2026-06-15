@@ -1,8 +1,9 @@
 <script lang="ts">
   import { traitor } from '$lib/state/traitor.svelte';
-  import { TraitorRole } from '$lib/types/traitor';
+  import { TraitorRole, type TraitorGameState } from '$lib/types/traitor';
   import { Trophy, ArrowLeft, Sun, Moon, Vote, UserMinus, Eye, EyeOff, ShieldCheck, Search } from '@lucide/svelte';
   import { goto } from '$app/navigation';
+  import type { Component } from 'svelte';
 
   if (!traitor.state) {
     if (typeof window !== 'undefined') goto('/traitor');
@@ -18,12 +19,18 @@
   const aliveMafia = $derived(alivePlayers.filter(p => p.role === TraitorRole.Mafia).length);
   const aliveTown = $derived(alivePlayers.filter(p => p.role !== TraitorRole.Mafia).length);
 
+  const phaseButtons = [
+    ['day', Sun, 'Day'] as const,
+    ['voting', Vote, 'Vote'] as const,
+    ['night', Moon, 'Night'] as const
+  ] satisfies Array<[TraitorGameState['phase'], Component, string]>;
+
   function handleNight() {
     const eliminatedId = traitor.executeNight(mafiaTargetId, doctorProtectId, detectiveInvestigateId);
     mafiaTargetId = null;
     doctorProtectId = null;
     detectiveInvestigateId = null;
-    
+
     if (eliminatedId) {
       alert(`${traitor.state?.players.find(p => p.id === eliminatedId)?.name} was killed tonight!`);
     } else {
@@ -37,10 +44,16 @@
     }
   }
 
+  function undoLastAction() {
+    if (confirm('Undo the last Traitor action?')) {
+      traitor.undoLastAction();
+    }
+  }
+
   const detectiveResult = $derived(
-    detectiveInvestigateId 
-      ? traitor.state?.players.find(p => p.id === detectiveInvestigateId)?.role === TraitorRole.Mafia 
-        ? 'Mafia 🔴' 
+    detectiveInvestigateId
+      ? traitor.state?.players.find(p => p.id === detectiveInvestigateId)?.role === TraitorRole.Mafia
+        ? 'Mafia 🔴'
         : 'Innocent 🏘'
       : null
   );
@@ -74,7 +87,7 @@
           </h2>
           <p class="text-body-lg text-text-secondary mt-2">The game has ended.</p>
         </div>
-        
+
         <div class="space-y-3">
           {#each traitor.state.players as player}
             <div class="flex justify-between items-center p-3 bg-background rounded-xl">
@@ -86,7 +99,7 @@
           {/each}
         </div>
 
-        <button 
+        <button
           onclick={() => traitor.reset()}
           class="w-full p-4 bg-primary text-white rounded-xl font-bold"
         >
@@ -96,20 +109,29 @@
     {:else}
       <!-- Phase Selection -->
       <section class="grid grid-cols-3 gap-2 p-1 bg-surface-variant rounded-2xl border border-border">
-        {#each [['day', Sun, 'Day'], ['voting', Vote, 'Vote'], ['night', Moon, 'Night']] as [p, Icon, label]}
-          <button 
-            onclick={() => traitor.setPhase(p as any)}
+        {#each phaseButtons as [phase, Icon, label]}
+          <button
+            onclick={() => traitor.setPhase(phase)}
             class="flex flex-col items-center gap-1 py-3 rounded-xl transition-all"
-            class:bg-background={traitor.state.phase === p}
-            class:text-primary={traitor.state.phase === p}
-            class:shadow-lg={traitor.state.phase === p}
-            class:text-text-secondary={traitor.state.phase !== p}
+            class:bg-background={traitor.state.phase === phase}
+            class:text-primary={traitor.state.phase === phase}
+            class:shadow-lg={traitor.state.phase === phase}
+            class:text-text-secondary={traitor.state.phase !== phase}
           >
             <Icon size={20} />
             <span class="text-[10px] font-bold uppercase">{label}</span>
           </button>
         {/each}
       </section>
+
+      {#if traitor.canUndo}
+        <button
+          onclick={undoLastAction}
+          class="w-full p-4 bg-surface-variant hover:bg-surface border border-border rounded-2xl text-label-lg font-bold transition-colors"
+        >
+          Undo Last Action
+        </button>
+      {/if}
 
       {#if traitor.state.phase === 'night'}
         <section class="p-6 rounded-2xl bg-surface border border-primary/30 space-y-6 animate-in slide-in-from-top-4">
@@ -152,7 +174,7 @@
             </div>
           </div>
 
-          <button 
+          <button
             onclick={handleNight}
             class="w-full p-4 bg-primary text-white rounded-xl font-bold active:scale-95 transition-transform"
           >
@@ -169,7 +191,7 @@
 
         <div class="grid grid-cols-2 gap-3">
           {#each traitor.state.players as player}
-            <div 
+            <div
               class="p-4 rounded-2xl border transition-all relative overflow-hidden"
               class:bg-surface={player.isAlive}
               class:border-border={player.isAlive}
@@ -190,7 +212,7 @@
               {/if}
 
               {#if traitor.state.phase === 'voting' && player.isAlive}
-                <button 
+                <button
                   onclick={() => handleVote(player.id)}
                   class="mt-4 w-full py-2 bg-danger/10 text-danger text-label-sm font-bold rounded-lg border border-danger/20"
                 >

@@ -26,6 +26,10 @@
   });
 
   function start() {
+    if (hearts.state && !window.confirm('Start a new Hearts game? Your current Hearts game will be discarded.')) {
+      return;
+    }
+
     hearts.startGame(playerNames, deckCount, pointLimit);
     goto('/hearts/play');
   }
