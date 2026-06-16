@@ -4,12 +4,12 @@
   import QRCode from 'qrcode';
   import { onMount } from 'svelte';
 
-  let { onClose } = $props<{ onClose: () => void }>();
+  let { onClose, url } = $props<{ onClose: () => void, url?: string }>();
   let qrCodeDataUrl = $state<string>('');
   let currentUrl = $state<string>('');
 
   onMount(async () => {
-    currentUrl = window.location.origin;
+    currentUrl = url || window.location.origin;
     try {
       qrCodeDataUrl = await QRCode.toDataURL(currentUrl, {
         width: 300,
