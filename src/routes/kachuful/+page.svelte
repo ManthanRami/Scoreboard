@@ -3,12 +3,15 @@
   import { goto } from '$app/navigation';
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import { ArrowRight, Trash2 } from '@lucide/svelte';
 
   let playerCount = $state(4);
   let deckCount = $state(1);
   let negativePenalty = $state(0);
   let playerNames = $state(['Rahul', 'Priya', 'Amit', 'Sara']);
+  let showOverwriteModal = $state(false);
+  let showResetModal = $state(false);
 
   $effect(() => {
     if (playerNames.length < playerCount) {
@@ -22,12 +25,28 @@
   });
 
   function start() {
-    if (kachuful.state && !window.confirm('Start a new Kachuful game? Your current Kachuful game will be discarded.')) {
+    if (kachuful.state) {
+      showOverwriteModal = true;
       return;
     }
 
+    startGame();
+  }
+
+  function startGame() {
     kachuful.startGame(playerNames, deckCount, negativePenalty);
     goto('/kachuful/play');
+  }
+
+  function resetGame() {
+    kachuful.reset();
+    showResetModal = false;
+  }
+
+  function requestReset() {
+    if (kachuful.state) {
+      showResetModal = true;
+    }
   }
 
   const maxCards = $derived(Math.floor((52 * deckCount) / playerCount));
@@ -83,12 +102,28 @@
     Start New Game <ArrowRight size={20} />
   </button>
   
-  {#if kachuful.state}
-    <button 
-      onclick={() => kachuful.reset()}
-      class="w-full p-4 text-danger text-label-lg flex justify-center items-center gap-2 hover:bg-danger/10 rounded-2xl transition-colors"
-    >
-      <Trash2 size={18} /> Clear Current Game
-    </button>
+  {#if showOverwriteModal}
+    <Modal
+      title="Start New Kachuful Game?"
+      message="Your current Kachuful game will be discarded."
+      confirmLabel="Start New"
+      type="danger"
+      onConfirm={() => {
+        showOverwriteModal = false;
+        startGame();
+      }}
+      onCancel={() => showOverwriteModal = false}
+    />
+  {/if}
+
+  {#if showResetModal}
+    <Modal
+      title="Clear Current Kachuful Game?"
+      message="This will permanently remove the current game."
+      confirmLabel="Clear Game"
+      type="danger"
+      onConfirm={resetGame}
+      onCancel={() => showResetModal = false}
+    />
   {/if}
 </div>

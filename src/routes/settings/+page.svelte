@@ -1,9 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { User, Download, Trash2, Smartphone, Moon, Sun, Code, Info, ArrowRight } from '@lucide/svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import Toast from '$lib/components/Toast.svelte';
 
   let displayName = $state('Player One');
   let installPrompt: any = null;
+  let showSavedToast = $state(false);
+  let showInstallToast = $state(false);
+  let showResetModal = $state(false);
 
   onMount(() => {
     const savedName = localStorage.getItem('player_name');
@@ -17,7 +22,7 @@
 
   function saveName() {
     localStorage.setItem('player_name', displayName);
-    alert('Name saved!');
+    showSavedToast = true;
   }
 
   async function install() {
@@ -26,8 +31,17 @@
       const { outcome } = await installPrompt.userChoice;
       if (outcome === 'accepted') installPrompt = null;
     } else {
-      alert('To install: Tap the share button and "Add to Home Screen"');
+      showInstallToast = true;
     }
+  }
+
+  function requestReset() {
+    showResetModal = true;
+  }
+
+  function resetApp() {
+    localStorage.clear();
+    location.reload();
   }
 
   function exportData() {
@@ -113,7 +127,7 @@
       </button>
 
       <button 
-        onclick={() => { if(confirm('Erase all data?')) localStorage.clear(); location.reload(); }}
+        onclick={requestReset}
         class="w-full p-4 rounded-2xl bg-surface border border-border flex items-center justify-between hover:border-danger/50 transition-colors"
       >
         <div class="flex items-center gap-3">
@@ -132,6 +146,33 @@
     </div>
     <p class="text-label-sm text-text-secondary opacity-50">Scoreboard Hub v1.0.0 • Made with Svelte 5</p>
   </section>
+
+  {#if showSavedToast}
+    <Toast
+      message="Name saved!"
+      type="success"
+      onClose={() => showSavedToast = false}
+    />
+  {/if}
+
+  {#if showInstallToast}
+    <Toast
+      message='To install: Tap the share button and "Add to Home Screen".'
+      type="info"
+      onClose={() => showInstallToast = false}
+    />
+  {/if}
+
+  {#if showResetModal}
+    <Modal
+      title="Erase All Data?"
+      message="This will permanently remove saved games, history, and settings from this browser."
+      confirmLabel="Erase Data"
+      type="danger"
+      onConfirm={resetApp}
+      onCancel={() => showResetModal = false}
+    />
+  {/if}
 </div>
 
 

@@ -3,18 +3,23 @@
   import { Trophy, Calendar, User, Trash2 } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import { loadGameHistory, clearGameHistory, formatCompletedDate, type CompletedGame } from '$lib/history';
+  import Modal from '$lib/components/Modal.svelte';
 
   let history = $state<CompletedGame[]>([]);
+  let showClearModal = $state(false);
 
   onMount(() => {
     history = loadGameHistory();
   });
 
   function clearHistory() {
-    if (confirm('Clear all game history?')) {
-      clearGameHistory();
-      history = [];
-    }
+    showClearModal = true;
+  }
+
+  function confirmClearHistory() {
+    clearGameHistory();
+    history = [];
+    showClearModal = false;
   }
 
   function roundCount(game: CompletedGame): number {
@@ -86,5 +91,16 @@
         </div>
       {/each}
     </div>
+  {/if}
+
+  {#if showClearModal}
+    <Modal
+      title="Clear Game History?"
+      message="This will permanently remove all completed games."
+      confirmLabel="Clear History"
+      type="danger"
+      onConfirm={confirmClearHistory}
+      onCancel={() => showClearModal = false}
+    />
   {/if}
 </div>

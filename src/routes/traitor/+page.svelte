@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import { ArrowRight, Trash2, ShieldAlert } from '@lucide/svelte';
 
   let playerCount = $state(8);
@@ -11,6 +12,8 @@
   let detectiveCount = $state(1);
   let doctorCount = $state(1);
   let playerNames = $state(['Rahul', 'Priya', 'Amit', 'Sara', 'Deepak', 'Anjali', 'Vikram', 'Sonia']);
+  let showOverwriteModal = $state(false);
+  let showResetModal = $state(false);
 
   $effect(() => {
     if (playerNames.length < playerCount) {
@@ -27,10 +30,15 @@
   const isValid = $derived(civilianCount >= 1 && mafiaCount < (playerCount - mafiaCount));
 
   function start() {
-    if (traitor.state && !window.confirm('Start a new Traitor game? Your current Traitor game will be discarded.')) {
+    if (traitor.state) {
+      showOverwriteModal = true;
       return;
     }
 
+    startGame();
+  }
+
+  function startGame() {
     traitor.startGame(playerNames, {
       [TraitorRole.Mafia]: mafiaCount,
       [TraitorRole.Detective]: detectiveCount,
@@ -38,6 +46,17 @@
       [TraitorRole.Civilian]: civilianCount
     });
     goto('/traitor/reveal');
+  }
+
+  function resetGame() {
+    traitor.reset();
+    showResetModal = false;
+  }
+
+  function requestReset() {
+    if (traitor.state) {
+      showResetModal = true;
+    }
   }
 </script>
 
@@ -93,12 +112,28 @@
     Shuffle & Reveal Roles <ArrowRight size={20} />
   </button>
   
-  {#if traitor.state}
-    <button 
-      onclick={() => traitor.reset()}
-      class="w-full p-4 text-danger text-label-lg flex justify-center items-center gap-2 hover:bg-danger/10 rounded-2xl transition-colors"
-    >
-      <Trash2 size={18} /> Clear Current Game
-    </button>
+  {#if showOverwriteModal}
+    <Modal
+      title="Start New Traitor Game?"
+      message="Your current Traitor game will be discarded."
+      confirmLabel="Start New"
+      type="danger"
+      onConfirm={() => {
+        showOverwriteModal = false;
+        startGame();
+      }}
+      onCancel={() => showOverwriteModal = false}
+    />
+  {/if}
+
+  {#if showResetModal}
+    <Modal
+      title="Clear Current Traitor Game?"
+      message="This will permanently remove the current game."
+      confirmLabel="Clear Game"
+      type="danger"
+      onConfirm={resetGame}
+      onCancel={() => showResetModal = false}
+    />
   {/if}
 </div>

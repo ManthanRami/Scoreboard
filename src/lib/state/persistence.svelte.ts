@@ -15,13 +15,18 @@ export function createLocalStorageState<T>(key: string, initialValue: T) {
 		}
 	}
 
+	$effect.root(() => {
+		$effect(() => {
+			if (browser) {
+				localStorage.setItem(key, JSON.stringify(state));
+			}
+		});
+	});
+
 	return {
 		get value() { return state; },
 		set value(v) {
 			state = v;
-			if (browser) {
-				localStorage.setItem(key, JSON.stringify(v));
-			}
 		}
 	};
 }

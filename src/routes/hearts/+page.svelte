@@ -4,12 +4,15 @@
   import { goto } from '$app/navigation';
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import { ArrowRight, Trash2, Info } from '@lucide/svelte';
 
   let playerCount = $state(4);
   let deckCount = $state(1);
   let pointLimit = $state(100);
   let playerNames = $state(['Rahul', 'Priya', 'Amit', 'Sara']);
+  let showOverwriteModal = $state(false);
+  let showResetModal = $state(false);
 
   $effect(() => {
     const maxPlayers = getHeartsMaxPlayers(deckCount);
@@ -26,12 +29,28 @@
   });
 
   function start() {
-    if (hearts.state && !window.confirm('Start a new Hearts game? Your current Hearts game will be discarded.')) {
+    if (hearts.state) {
+      showOverwriteModal = true;
       return;
     }
 
+    startGame();
+  }
+
+  function startGame() {
     hearts.startGame(playerNames, deckCount, pointLimit);
     goto('/hearts/play');
+  }
+
+  function resetGame() {
+    hearts.reset();
+    showResetModal = false;
+  }
+
+  function requestReset() {
+    if (hearts.state) {
+      showResetModal = true;
+    }
   }
 
   const maxPlayersForDecks = $derived(getHeartsMaxPlayers(deckCount));
@@ -89,12 +108,28 @@
     Start New Game <ArrowRight size={20} />
   </button>
   
-  {#if hearts.state}
-    <button 
-      onclick={() => hearts.reset()}
-      class="w-full p-4 text-danger text-label-lg flex justify-center items-center gap-2 hover:bg-danger/10 rounded-2xl transition-colors"
-    >
-      <Trash2 size={18} /> Clear Current Game
-    </button>
+  {#if showOverwriteModal}
+    <Modal
+      title="Start New Hearts Game?"
+      message="Your current Hearts game will be discarded."
+      confirmLabel="Start New"
+      type="danger"
+      onConfirm={() => {
+        showOverwriteModal = false;
+        startGame();
+      }}
+      onCancel={() => showOverwriteModal = false}
+    />
+  {/if}
+
+  {#if showResetModal}
+    <Modal
+      title="Clear Current Hearts Game?"
+      message="This will permanently remove the current game."
+      confirmLabel="Clear Game"
+      type="danger"
+      onConfirm={resetGame}
+      onCancel={() => showResetModal = false}
+    />
   {/if}
 </div>

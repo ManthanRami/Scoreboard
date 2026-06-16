@@ -5,6 +5,8 @@
   import { goto } from '$app/navigation';
   import type { Component } from 'svelte';
   import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import Toast from '$lib/components/Toast.svelte';
   import { useWakeLock } from '$lib/utils/wakeLock';
 
   useWakeLock();
@@ -15,6 +17,11 @@
 
   let showRoles = $state(false);
   let showDetectiveResult = $state(false);
+  let showNightToast = $state(false);
+  let nightToastMessage = $state('');
+  let showVoteModal = $state(false);
+  let showUndoModal = $state(false);
+  let pendingVoteId = $state<string | null>(null);
 
   const alivePlayers = $derived(traitor.state?.players.filter(p => p.isAlive) || []);
   const deadPlayers = $derived(traitor.state?.players.filter(p => !p.isAlive) || []);
@@ -30,24 +37,37 @@
   function handleNight() {
     const eliminatedId = traitor.executeNight();
 
-    if (eliminatedId) {
-      alert(`${traitor.state?.players.find(p => p.id === eliminatedId)?.name} was killed tonight!`);
-    } else {
-      alert('Nobody was killed tonight! The doctor might have saved someone.');
-    }
+    nightToastMessage = eliminatedId
+      ? `${traitor.state?.players.find(p => p.id === eliminatedId)?.name} was killed tonight.`
+      : 'Nobody was killed tonight. The doctor might have saved someone.';
+    showNightToast = true;
     showDetectiveResult = false;
   }
 
   function handleVote(id: string) {
-    if (confirm(`Eliminate ${traitor.state?.players.find(p => p.id === id)?.name}?`)) {
-      traitor.eliminatePlayer(id, 'vote');
-    }
+    pendingVoteId = id;
+    showVoteModal = true;
   }
 
-  function undoLastAction() {
-    if (confirm('Undo the last Traitor action?')) {
-      traitor.undoLastAction();
+  function confirmVote() {
+    if (pendingVoteId) {
+      traitor.eliminatePlayer(pendingVoteId, 'vote');
     }
+    pendingVoteId = null;
+    showVoteModal = false;
+  }
+
+  const pendingVoteName = $derived(
+    pendingVoteId ? traitor.state?.players.find(p => p.id === pendingVoteId)?.name || 'player' : ''
+  );
+
+  function undoLastAction() {
+    showUndoModal = true;
+  }
+
+  function confirmUndo() {
+    traitor.undoLastAction();
+    showUndoModal = false;
   }
 
   const detectiveResult = $derived(
@@ -252,4 +272,36 @@
       </section>
     {/if}
   </div>
+
+  {#if showVoteModal}
+    <Modal
+      title="Eliminate Player?"
+      message="Eliminate {pendingVoteName}?"
+      confirmLabel="Eliminate"
+      type="danger"
+      onConfirm={confirmVote}
+      onCancel={() => {
+        pendingVoteId = null;
+        showVoteModal = false;
+      }}
+    />
+  {/if}
+
+  {#if showUndoModal}
+    <Modal
+      title="Undo Last Action?"
+      message="This will restore the previous Traitor game state."
+      confirmLabel="Undo"
+      onConfirm={confirmUndo}
+      onCancel={() => showUndoModal = false}
+    />
+  {/if}
+
+  {#if showNightToast}
+    <Toast
+      message={nightToastMessage}
+      type="info"
+      onClose={() => showNightToast = false}
+    />
+  {/if}
 {/if}
