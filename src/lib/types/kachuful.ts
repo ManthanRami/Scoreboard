@@ -24,7 +24,8 @@ export interface KachufulGameState extends GameBase {
   maxCards: number;
   totalRounds: number;
   winnerName: string | null;
-  negativePenalty: number; // Default 0, can be set to -5, -10 etc.
+  negativePenalty: number; // Default 0, used in standard mode
+  scoringVariant: 'standard' | 'double-digit';
 }
 
 export const TRUMP_ORDER = [

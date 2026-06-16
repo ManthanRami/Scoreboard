@@ -9,6 +9,7 @@
   let playerCount = $state(4);
   let deckCount = $state(1);
   let negativePenalty = $state(0);
+  let scoringVariant = $state<'standard' | 'double-digit'>('standard');
   let playerNames = $state(['Rahul', 'Priya', 'Amit', 'Sara']);
   let showOverwriteModal = $state(false);
   let showResetModal = $state(false);
@@ -34,7 +35,7 @@
   }
 
   function startGame() {
-    kachuful.startGame(playerNames, deckCount, negativePenalty);
+    kachuful.startGame(playerNames, deckCount, negativePenalty, scoringVariant);
     goto('/kachuful/play');
   }
 
@@ -66,10 +67,44 @@
     {/if}
   </div>
 
-  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <section class="space-y-4">
+    <h3 class="text-label-lg text-text-secondary uppercase">Scoring Mode</h3>
+    <div class="grid grid-cols-2 gap-2 p-1 bg-surface-variant rounded-2xl border border-border">
+      <button 
+        onclick={() => scoringVariant = 'standard'}
+        class="py-3 rounded-xl transition-all text-label-lg font-bold"
+        class:bg-background={scoringVariant === 'standard'}
+        class:text-primary={scoringVariant === 'standard'}
+        class:text-text-secondary={scoringVariant !== 'standard'}
+      >
+        Standard
+      </button>
+      <button 
+        onclick={() => scoringVariant = 'double-digit'}
+        class="py-3 rounded-xl transition-all text-label-lg font-bold"
+        class:bg-background={scoringVariant === 'double-digit'}
+        class:text-primary={scoringVariant === 'double-digit'}
+        class:text-text-secondary={scoringVariant !== 'double-digit'}
+      >
+        High Stakes
+      </button>
+    </div>
+    
+    {#if scoringVariant === 'standard'}
+      <PlayerStepper bind:value={negativePenalty} min={-20} max={0} step={5} label="Miss Penalty (Standard Only)" />
+    {:else}
+      <div class="p-4 bg-primary/10 rounded-xl border border-primary/20">
+        <p class="text-body-sm italic text-primary text-center">
+          <b>High Stakes:</b> Make N > 0 to get +NN (e.g. 11, 22). Miss N to get -NN. 
+          Make 0 to get +10. Miss 0 to get -5.
+        </p>
+      </div>
+    {/if}
+  </section>
+
+  <section class="grid grid-cols-2 gap-4">
     <PlayerStepper bind:value={playerCount} min={2} max={10} label="Players" />
     <PlayerStepper bind:value={deckCount} min={1} max={3} label="Decks" />
-    <PlayerStepper bind:value={negativePenalty} min={-20} max={0} step={5} label="Miss Penalty" />
   </section>
 
   <section class="space-y-4">

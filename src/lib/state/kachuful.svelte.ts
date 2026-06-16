@@ -15,7 +15,7 @@ class KachufulStore {
 		return this.state?.players.some(player => player.rounds.length > 0) ?? false;
 	}
 
-	startGame(playerNames: string[], deckCount: number, negativePenalty: number = 0) {
+	startGame(playerNames: string[], deckCount: number, negativePenalty: number = 0, scoringVariant: 'standard' | 'double-digit' = 'standard') {
 		const maxCards = Math.floor((52 * deckCount) / playerNames.length);
 		this.state = {
 			id: crypto.randomUUID(),
@@ -33,6 +33,7 @@ class KachufulStore {
 			totalRounds: maxCards * 2 - 1,
 			winnerName: null,
 			negativePenalty,
+			scoringVariant,
 			lastSavedHistoryId: null
 		};
 	}
@@ -42,10 +43,23 @@ class KachufulStore {
 		if (entries.length !== this.state.players.length) return false;
 		if (!this.isRoundValid(entries)) return false;
 
-		const penalty = this.state.negativePenalty;
+		const { negativePenalty, scoringVariant } = this.state;
+		
 		const updatedPlayers = this.state.players.map((player, i) => {
 			const { bid, tricks } = entries[i];
-			const score = bid === tricks ? 10 + bid : penalty;
+			const isMatched = bid === tricks;
+			let score = 0;
+
+			if (scoringVariant === 'double-digit') {
+				if (isMatched) {
+					score = bid === 0 ? 10 : bid * 11;
+				} else {
+					score = bid === 0 ? -5 : -(bid * 11);
+				}
+			} else {
+				score = isMatched ? 10 + bid : negativePenalty;
+			}
+
 			const round: KachufulPlayerRound = { bid, tricks, score };
 
 			return {

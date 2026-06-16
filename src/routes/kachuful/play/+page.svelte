@@ -116,9 +116,15 @@
               </div>
               <div class="flex justify-end">
                 {#if roundEntries[i].bid === roundEntries[i].tricks}
-                  <ScoreBadge score="+{10 + roundEntries[i].bid}" status="success" />
+                  <ScoreBadge 
+                    score="+{kachuful.state.scoringVariant === 'double-digit' ? (roundEntries[i].bid === 0 ? 10 : roundEntries[i].bid * 11) : (10 + roundEntries[i].bid)}" 
+                    status="success" 
+                  />
                 {:else}
-                  <ScoreBadge score={kachuful.state.negativePenalty} status="danger" />
+                  <ScoreBadge 
+                    score={kachuful.state.scoringVariant === 'double-digit' ? (roundEntries[i].bid === 0 ? -5 : -(roundEntries[i].bid * 11)) : kachuful.state.negativePenalty} 
+                    status="danger" 
+                  />
                 {/if}
               </div>
             </div>
