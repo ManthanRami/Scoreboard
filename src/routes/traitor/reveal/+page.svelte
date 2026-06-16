@@ -43,6 +43,15 @@
     [TraitorRole.Doctor]: 'text-success',
     [TraitorRole.Civilian]: 'text-text-secondary'
   };
+
+  function handleHold(start: boolean) {
+    if (start && !isHolding) {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }
+    isHolding = start;
+  }
 </script>
 
 {#if traitor.state && currentPlayer}
@@ -60,11 +69,11 @@
       role="button"
       tabindex="0"
       aria-label="Hold to reveal role"
-      onpointerdown={() => isHolding = true}
-      onpointerup={() => isHolding = false}
-      onpointerleave={() => isHolding = false}
-      onkeydown={(e) => { if (e.key === ' ' || e.key === 'Enter') isHolding = true }}
-      onkeyup={(e) => { if (e.key === ' ' || e.key === 'Enter') isHolding = false }}
+      onpointerdown={() => handleHold(true)}
+      onpointerup={() => handleHold(false)}
+      onpointerleave={() => handleHold(false)}
+      onkeydown={(e) => { if (e.key === ' ' || e.key === 'Enter') handleHold(true) }}
+      onkeyup={(e) => { if (e.key === ' ' || e.key === 'Enter') handleHold(false) }}
     >
       {#if !isHolding}
         <div class="text-center space-y-4">
