@@ -1,4 +1,5 @@
 import type { GameBase } from '$lib/types/game';
+import { generateUUID } from '$lib/utils/uuid';
 
 export const HISTORY_KEY = 'game_history';
 
@@ -34,7 +35,7 @@ export function saveCompletedGame(gameData: CompletedGameInput): CompletedGame {
 	if (typeof window === 'undefined') {
 		return {
 			...gameData,
-			id: crypto.randomUUID(),
+			id: generateUUID(),
 			completedAt: new Date().toISOString()
 		};
 	}
@@ -42,7 +43,7 @@ export function saveCompletedGame(gameData: CompletedGameInput): CompletedGame {
 	const history = loadGameHistory();
 	const completedGame: CompletedGame = {
 		...gameData,
-		id: crypto.randomUUID(),
+		id: generateUUID(),
 		completedAt: new Date().toISOString()
 	};
 

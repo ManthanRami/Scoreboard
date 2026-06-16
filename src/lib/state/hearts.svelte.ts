@@ -2,6 +2,7 @@ import { removeCompletedGameFromHistory } from '$lib/history';
 import { createLocalStorageState, saveToHistory } from './persistence.svelte';
 import type { HeartsGameState, HeartsRound } from '$lib/types/hearts';
 import { getHeartsMaxPoints } from '$lib/types/hearts';
+import { generateUUID } from '$lib/utils/uuid';
 
 const INITIAL_STATE: HeartsGameState | null = null;
 
@@ -18,7 +19,7 @@ class HeartsStore {
 
 	startGame(playerNames: string[], deckCount: number, pointLimit: number) {
 		this.state = {
-			id: crypto.randomUUID(),
+			id: generateUUID(),
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			status: 'in_progress',

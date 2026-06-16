@@ -1,6 +1,7 @@
 import { removeCompletedGameFromHistory } from '$lib/history';
 import { createLocalStorageState, saveToHistory } from './persistence.svelte';
 import { type TraitorGameState, TraitorRole } from '$lib/types/traitor';
+import { generateUUID } from '$lib/utils/uuid';
 
 const INITIAL_STATE: TraitorGameState | null = null;
 
@@ -32,12 +33,12 @@ class TraitorStore {
 		}
 
 		this.state = {
-			id: crypto.randomUUID(),
+			id: generateUUID(),
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			status: 'in_progress',
 			players: playerNames.map((name, i) => ({
-				id: crypto.randomUUID(),
+				id: generateUUID(),
 				name,
 				role: roles[i],
 				isAlive: true,

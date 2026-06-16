@@ -2,6 +2,7 @@ import { removeCompletedGameFromHistory } from '$lib/history';
 import { createLocalStorageState, saveToHistory } from './persistence.svelte';
 import { getCardsForRound } from '$lib/types/kachuful';
 import type { KachufulGameState, KachufulPlayerRound } from '$lib/types/kachuful';
+import { generateUUID } from '$lib/utils/uuid';
 
 const INITIAL_STATE: KachufulGameState | null = null;
 
@@ -18,7 +19,7 @@ class KachufulStore {
 	startGame(playerNames: string[], deckCount: number, negativePenalty: number = 0, scoringVariant: 'standard' | 'double-digit' = 'standard') {
 		const maxCards = Math.floor((52 * deckCount) / playerNames.length);
 		this.state = {
-			id: crypto.randomUUID(),
+			id: generateUUID(),
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 			status: 'in_progress',
