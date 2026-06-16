@@ -4,11 +4,12 @@
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import ScoreBadge from '$lib/components/ScoreBadge.svelte';
   import RaceChart from '$lib/components/RaceChart.svelte';
-  import { Trophy, ArrowLeft, Plus, AlertCircle } from '@lucide/svelte';
+  import { Trophy, ArrowLeft, Plus, AlertCircle, Share2 } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import { useWakeLock } from '$lib/utils/wakeLock';
+  import { shareElement } from '$lib/utils/share';
 
   useWakeLock();
 
@@ -21,6 +22,7 @@
   
   let showUndoModal = $state(false);
   let showNewGameModal = $state(false);
+  let isSharing = $state(false);
 
   const maxRoundPoints = $derived(hearts.state ? getHeartsMaxPoints(hearts.state.deckCount) : 26);
   const currentTotal = $derived(roundScores.reduce((a, b) => a + b, 0));
@@ -79,12 +81,26 @@
         <Trophy size={48} class="text-gold mx-auto" />
         <h2 class="text-display-md">Winner!</h2>
         <p class="text-display-lg text-gold">{hearts.state.winnerName}</p>
-        <button
-          onclick={() => showNewGameModal = true}
-          class="px-6 py-2 bg-gold text-background rounded-full font-bold"
-        >
-          New Game
-        </button>
+        <div class="flex flex-col gap-3 pt-4">
+          <button
+            onclick={async () => {
+              isSharing = true;
+              await shareElement('hearts-standings', 'Hearts Results', 'Check out the final scores!');
+              isSharing = false;
+            }}
+            disabled={isSharing}
+            class="w-full px-6 py-4 bg-primary text-white rounded-full font-bold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors disabled:opacity-50"
+          >
+            <Share2 size={20} />
+            {isSharing ? 'Generating...' : 'Share Recap'}
+          </button>
+          <button
+            onclick={() => showNewGameModal = true}
+            class="w-full px-6 py-4 bg-surface-variant text-text-primary rounded-full font-bold hover:bg-background transition-colors border border-border"
+          >
+            New Game
+          </button>
+        </div>
       </section>
     {:else}
       <section class="space-y-6">
@@ -183,7 +199,7 @@
       </section>
     {/if}
 
-    <section class="space-y-4 mt-8">
+    <section id="hearts-standings" class="space-y-4 mt-8 bg-background p-4 rounded-2xl">
       <h3 class="text-title-lg">Standings (Lowest wins)</h3>
       <RaceChart players={hearts.state.players} sortMode="low-to-high" />
     </section>

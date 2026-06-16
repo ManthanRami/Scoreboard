@@ -1,13 +1,14 @@
 <script lang="ts">
   import { traitor } from '$lib/state/traitor.svelte';
   import { TraitorRole, type TraitorGameState } from '$lib/types/traitor';
-  import { Trophy, ArrowLeft, Sun, Moon, Vote, UserMinus, Eye, EyeOff, ShieldCheck, Search } from '@lucide/svelte';
+  import { Trophy, ArrowLeft, Sun, Moon, Vote, UserMinus, Eye, EyeOff, ShieldCheck, Search, Share2 } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import type { Component } from 'svelte';
   import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Toast from '$lib/components/Toast.svelte';
   import { useWakeLock } from '$lib/utils/wakeLock';
+  import { shareElement } from '$lib/utils/share';
 
   useWakeLock();
 
@@ -21,6 +22,7 @@
   let nightToastMessage = $state('');
   let showVoteModal = $state(false);
   let showUndoModal = $state(false);
+  let isSharing = $state(false);
   let pendingVoteId = $state<string | null>(null);
 
   const alivePlayers = $derived(traitor.state?.players.filter(p => p.isAlive) || []);
@@ -101,31 +103,47 @@
     {#if traitor.state.status === 'completed'}
       <CelebrationOverlay />
       <section class="p-8 rounded-3xl bg-surface border-2 border-primary text-center space-y-6 relative z-10">
-        <Trophy size={64} class="mx-auto {traitor.state.winner === 'mafia' ? 'text-danger' : 'text-success'}" />
-        <div>
-          <h2 class="text-display-md uppercase tracking-widest">
-            {traitor.state.winner === 'mafia' ? 'Mafia Wins!' : 'Town Wins!'}
-          </h2>
-          <p class="text-body-lg text-text-secondary mt-2">The game has ended.</p>
+        <div id="traitor-standings" class="space-y-6 bg-surface p-4 rounded-xl">
+          <Trophy size={64} class="mx-auto {traitor.state.winner === 'mafia' ? 'text-danger' : 'text-success'}" />
+          <div>
+            <h2 class="text-display-md uppercase tracking-widest">
+              {traitor.state.winner === 'mafia' ? 'Mafia Wins!' : 'Town Wins!'}
+            </h2>
+            <p class="text-body-lg text-text-secondary mt-2">The game has ended.</p>
+          </div>
+
+          <div class="space-y-3">
+            {#each traitor.state.players as player}
+              <div class="flex justify-between items-center p-3 bg-background rounded-xl">
+                <span>{player.name}</span>
+                <span class="text-label-sm font-bold {player.role === TraitorRole.Mafia ? 'text-danger' : 'text-success'}">
+                  {player.role}
+                </span>
+              </div>
+            {/each}
+          </div>
         </div>
 
-        <div class="space-y-3">
-          {#each traitor.state.players as player}
-            <div class="flex justify-between items-center p-3 bg-background rounded-xl">
-              <span>{player.name}</span>
-              <span class="text-label-sm font-bold {player.role === TraitorRole.Mafia ? 'text-danger' : 'text-success'}">
-                {player.role}
-              </span>
-            </div>
-          {/each}
+        <div class="flex flex-col gap-3 pt-2">
+          <button
+            onclick={async () => {
+              isSharing = true;
+              await shareElement('traitor-standings', 'Traitor Results', 'Check out the final roles!');
+              isSharing = false;
+            }}
+            disabled={isSharing}
+            class="w-full px-6 py-4 bg-primary text-white rounded-full font-bold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors disabled:opacity-50"
+          >
+            <Share2 size={20} />
+            {isSharing ? 'Generating...' : 'Share Recap'}
+          </button>
+          <button
+            onclick={() => traitor.reset()}
+            class="w-full px-6 py-4 bg-surface-variant text-text-primary rounded-full font-bold hover:bg-background transition-colors border border-border"
+          >
+            New Game
+          </button>
         </div>
-
-        <button
-          onclick={() => traitor.reset()}
-          class="w-full p-4 bg-primary text-white rounded-xl font-bold"
-        >
-          New Game
-        </button>
       </section>
     {:else}
       <!-- Phase Selection -->
