@@ -4,15 +4,17 @@
   import { Trophy, ArrowLeft, Sun, Moon, Vote, UserMinus, Eye, EyeOff, ShieldCheck, Search } from '@lucide/svelte';
   import { goto } from '$app/navigation';
   import type { Component } from 'svelte';
+  import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
+  import { useWakeLock } from '$lib/utils/wakeLock';
+
+  useWakeLock();
 
   if (!traitor.state) {
     if (typeof window !== 'undefined') goto('/traitor');
   }
 
   let showRoles = $state(false);
-  let mafiaTargetId = $state<string | null>(null);
-  let doctorProtectId = $state<string | null>(null);
-  let detectiveInvestigateId = $state<string | null>(null);
+  let showDetectiveResult = $state(false);
 
   const alivePlayers = $derived(traitor.state?.players.filter(p => p.isAlive) || []);
   const deadPlayers = $derived(traitor.state?.players.filter(p => !p.isAlive) || []);
@@ -26,16 +28,14 @@
   ] satisfies Array<[TraitorGameState['phase'], Component, string]>;
 
   function handleNight() {
-    const eliminatedId = traitor.executeNight(mafiaTargetId, doctorProtectId, detectiveInvestigateId);
-    mafiaTargetId = null;
-    doctorProtectId = null;
-    detectiveInvestigateId = null;
+    const eliminatedId = traitor.executeNight();
 
     if (eliminatedId) {
       alert(`${traitor.state?.players.find(p => p.id === eliminatedId)?.name} was killed tonight!`);
     } else {
       alert('Nobody was killed tonight! The doctor might have saved someone.');
     }
+    showDetectiveResult = false;
   }
 
   function handleVote(id: string) {
@@ -51,8 +51,8 @@
   }
 
   const detectiveResult = $derived(
-    detectiveInvestigateId
-      ? traitor.state?.players.find(p => p.id === detectiveInvestigateId)?.role === TraitorRole.Mafia
+    traitor.state?.nightActions.detectiveInvestigateId
+      ? traitor.state?.players.find(p => p.id === traitor.state?.nightActions.detectiveInvestigateId)?.role === TraitorRole.Mafia
         ? 'Mafia 🔴'
         : 'Innocent 🏘'
       : null
@@ -79,7 +79,8 @@
     </header>
 
     {#if traitor.state.status === 'completed'}
-      <section class="p-8 rounded-3xl bg-surface border-2 border-primary text-center space-y-6">
+      <CelebrationOverlay />
+      <section class="p-8 rounded-3xl bg-surface border-2 border-primary text-center space-y-6 relative z-10">
         <Trophy size={64} class="mx-auto {traitor.state.winner === 'mafia' ? 'text-danger' : 'text-success'}" />
         <div>
           <h2 class="text-display-md uppercase tracking-widest">
@@ -142,8 +143,12 @@
           <div class="space-y-4">
             <div class="space-y-2">
               <label class="text-label-sm text-danger flex items-center gap-1"><UserMinus size={14}/> Mafia Kills</label>
-              <select bind:value={mafiaTargetId} class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary">
-                <option value={null}>Select Target</option>
+              <select 
+                value={traitor.state.nightActions.mafiaTargetId} 
+                onchange={(e) => traitor.updateNightActions({ mafiaTargetId: e.currentTarget.value || null })}
+                class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
+              >
+                <option value="">Select Target</option>
                 {#each alivePlayers as p}
                   <option value={p.id}>{p.name}</option>
                 {/each}
@@ -152,8 +157,12 @@
 
             <div class="space-y-2">
               <label class="text-label-sm text-success flex items-center gap-1"><ShieldCheck size={14}/> Doctor Protects</label>
-              <select bind:value={doctorProtectId} class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary">
-                <option value={null}>Select Target</option>
+              <select 
+                value={traitor.state.nightActions.doctorProtectId}
+                onchange={(e) => traitor.updateNightActions({ doctorProtectId: e.currentTarget.value || null })}
+                class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
+              >
+                <option value="">Select Target</option>
                 {#each alivePlayers as p}
                   <option value={p.id}>{p.name}</option>
                 {/each}
@@ -162,14 +171,32 @@
 
             <div class="space-y-2">
               <label class="text-label-sm text-primary flex items-center gap-1"><Search size={14}/> Detective Checks</label>
-              <select bind:value={detectiveInvestigateId} class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary">
-                <option value={null}>Select Target</option>
+              <select 
+                value={traitor.state.nightActions.detectiveInvestigateId}
+                onchange={(e) => traitor.updateNightActions({ detectiveInvestigateId: e.currentTarget.value || null })}
+                class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
+              >
+                <option value="">Select Target</option>
                 {#each alivePlayers as p}
                   <option value={p.id}>{p.name}</option>
                 {/each}
               </select>
               {#if detectiveResult}
-                <p class="text-title-md font-bold text-center mt-2 p-2 bg-primary/10 rounded-lg">Result: {detectiveResult}</p>
+                <div class="mt-4 p-4 bg-primary/10 rounded-xl border border-primary/20 text-center space-y-3">
+                   <p class="text-label-sm uppercase tracking-wider opacity-70">Investigation Result</p>
+                   {#if !showDetectiveResult}
+                     <button 
+                       onpointerdown={() => showDetectiveResult = true}
+                       onpointerup={() => showDetectiveResult = false}
+                       onpointerleave={() => showDetectiveResult = false}
+                       class="w-full py-3 bg-primary text-white rounded-lg font-bold text-sm"
+                     >
+                       Hold to Reveal Result
+                     </button>
+                   {:else}
+                     <p class="text-display-md font-bold animate-in zoom-in duration-200">{detectiveResult}</p>
+                   {/if}
+                </div>
               {/if}
             </div>
           </div>

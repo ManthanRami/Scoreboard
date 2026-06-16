@@ -18,7 +18,8 @@ describe('traitor store', () => {
 		const civilian = traitor.state?.players.find(player => player.role === TraitorRole.Civilian);
 		expect(civilian).toBeDefined();
 
-		traitor.executeNight(civilian!.id, null, null);
+		traitor.updateNightActions({ mafiaTargetId: civilian!.id });
+		traitor.executeNight();
 		expect(traitor.state?.status).toBe('completed');
 		expect(traitor.state?.winner).toBe('mafia');
 

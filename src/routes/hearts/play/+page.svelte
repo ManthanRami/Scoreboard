@@ -6,6 +6,11 @@
   import RaceChart from '$lib/components/RaceChart.svelte';
   import { Trophy, ArrowLeft, Plus, AlertCircle } from '@lucide/svelte';
   import { goto } from '$app/navigation';
+  import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import { useWakeLock } from '$lib/utils/wakeLock';
+
+  useWakeLock();
 
   if (!hearts.state) {
     if (typeof window !== 'undefined') goto('/hearts');
@@ -13,6 +18,9 @@
 
   let roundScores = $state(hearts.state?.players.map(() => 0) || []);
   let moonShooterIndex = $state<number | null>(null);
+  
+  let showUndoModal = $state(false);
+  let showNewGameModal = $state(false);
 
   const maxRoundPoints = $derived(hearts.state ? getHeartsMaxPoints(hearts.state.deckCount) : 26);
   const currentTotal = $derived(roundScores.reduce((a, b) => a + b, 0));
@@ -26,12 +34,17 @@
   }
 
   function undoRound() {
-    if (window.confirm('Undo the last Hearts round?')) {
-      hearts.undoLastRound();
-      roundScores = hearts.state?.players.map(() => 0) || [];
-      moonShooterIndex = null;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    hearts.undoLastRound();
+    roundScores = hearts.state?.players.map(() => 0) || [];
+    moonShooterIndex = null;
+    showUndoModal = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetGame() {
+    hearts.reset();
+    showNewGameModal = false;
+    goto('/hearts');
   }
 
   function toggleMoon(index: number) {
@@ -51,16 +64,19 @@
         <h2 class="text-title-md">Round {hearts.state.rounds.length + 1}</h2>
         <p class="text-label-sm text-text-secondary">Limit: {hearts.state.pointLimit} pts</p>
       </div>
-      <div class="w-6"></div>
+      <button onclick={() => showNewGameModal = true} class="text-primary text-label-sm font-bold">
+        NEW
+      </button>
     </header>
 
     {#if hearts.state.status === 'completed'}
-      <section class="p-8 rounded-3xl bg-gold/10 border-2 border-gold text-center space-y-4">
+      <CelebrationOverlay />
+      <section class="p-8 rounded-3xl bg-gold/10 border-2 border-gold text-center space-y-4 relative z-10">
         <Trophy size={48} class="text-gold mx-auto" />
         <h2 class="text-display-md">Winner!</h2>
         <p class="text-display-lg text-gold">{hearts.state.winnerName}</p>
         <button
-          onclick={() => hearts.reset()}
+          onclick={() => showNewGameModal = true}
           class="px-6 py-2 bg-gold text-background rounded-full font-bold"
         >
           New Game
@@ -128,7 +144,7 @@
         <div class="space-y-3">
           {#if hearts.hasSubmittedRounds}
             <button
-              onclick={undoRound}
+              onclick={() => showUndoModal = true}
               class="w-full p-4 bg-surface-variant hover:bg-surface border border-border rounded-2xl text-label-lg font-bold transition-colors"
             >
               Undo Last Round
@@ -191,4 +207,25 @@
       </div>
     </section>
   </div>
+
+  {#if showUndoModal}
+    <Modal 
+      title="Undo Last Round?"
+      message="This will permanently remove the last round's scores."
+      confirmLabel="Yes, Undo"
+      type="danger"
+      onConfirm={undoRound}
+      onCancel={() => showUndoModal = false}
+    />
+  {/if}
+
+  {#if showNewGameModal}
+    <Modal 
+      title="Start New Game?"
+      message="Current game progress will be lost if you haven't finished."
+      confirmLabel="Start New"
+      onConfirm={resetGame}
+      onCancel={() => showNewGameModal = false}
+    />
+  {/if}
 {/if}

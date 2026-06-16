@@ -3,6 +3,7 @@ export interface GameBase {
   createdAt: string;
   updatedAt: string;
   status: 'in_progress' | 'completed';
+  lastSavedHistoryId?: string | null;
 }
 
 export interface Player {

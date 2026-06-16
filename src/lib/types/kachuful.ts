@@ -42,3 +42,7 @@ export function getCardsForRound(round: number, maxCards: number): number {
   if (round <= maxCards) return round;
   return maxCards * 2 - round;
 }
+
+export function getDealerIndex(round: number, playerCount: number): number {
+  return (round - 1) % playerCount;
+}

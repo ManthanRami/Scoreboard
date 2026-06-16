@@ -7,7 +7,8 @@
     players, 
     path, 
     icon: IconComponent, 
-    colorClass 
+    colorClass,
+    onclick
   } = $props<{
     title: string;
     description: string;
@@ -15,12 +16,14 @@
     path: string;
     icon: Component<any>;
     colorClass: string;
+    onclick?: (e: MouseEvent) => void;
   }>();
 </script>
 
 <a 
   href={path}
-  class="relative overflow-hidden p-6 rounded-2xl bg-surface border border-border group transition-all duration-300 active:scale-95 hover:border-primary/50"
+  {onclick}
+  class="relative overflow-hidden p-6 rounded-2xl bg-surface border border-border group transition-all duration-300 active:scale-95 hover:border-primary/50 block"
 >
   <div class="flex justify-between items-start mb-4">
     <div class="p-3 rounded-xl bg-background border border-border group-hover:border-primary/30 transition-colors">

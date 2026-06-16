@@ -7,7 +7,6 @@ const INITIAL_STATE: HeartsGameState | null = null;
 
 class HeartsStore {
 	private persisted = createLocalStorageState<HeartsGameState | null>('hearts_game', INITIAL_STATE);
-	private lastSavedHistoryId: string | null = null;
 
 	get state() { return this.persisted.value; }
 	set state(v) { this.persisted.value = v; }
@@ -18,7 +17,6 @@ class HeartsStore {
 	}
 
 	startGame(playerNames: string[], deckCount: number, pointLimit: number) {
-		this.lastSavedHistoryId = null;
 		this.state = {
 			id: crypto.randomUUID(),
 			createdAt: new Date().toISOString(),
@@ -31,7 +29,8 @@ class HeartsStore {
 			deckCount,
 			pointLimit,
 			rounds: [],
-			winnerName: null
+			winnerName: null,
+			lastSavedHistoryId: null
 		};
 	}
 
@@ -62,18 +61,27 @@ class HeartsStore {
 			moonShooterIndex
 		};
 
+		let historyId = this.state.lastSavedHistoryId;
+		if (isGameOver) {
+			historyId = saveToHistory({ 
+				...this.state, 
+				players: updatedPlayers,
+				rounds: [...this.state.rounds, round],
+				status: 'completed',
+				winnerName: [...updatedPlayers].sort((a, b) => a.totalScore - b.totalScore)[0].name,
+				gameType: 'hearts' 
+			}).id;
+		}
+
 		this.state = {
 			...this.state,
 			players: updatedPlayers,
 			rounds: [...this.state.rounds, round],
 			status: isGameOver ? 'completed' : 'in_progress',
 			updatedAt: new Date().toISOString(),
-			winnerName: isGameOver ? [...updatedPlayers].sort((a, b) => a.totalScore - b.totalScore)[0].name : null
+			winnerName: isGameOver ? [...updatedPlayers].sort((a, b) => a.totalScore - b.totalScore)[0].name : null,
+			lastSavedHistoryId: historyId
 		};
-
-		if (isGameOver) {
-			this.lastSavedHistoryId = saveToHistory({ ...this.state, gameType: 'hearts' }).id;
-		}
 
 		return true;
 	}
@@ -92,6 +100,7 @@ class HeartsStore {
 
 		const pointLimit = this.state?.pointLimit ?? 100;
 		const isGameOver = players.some(player => player.totalScore >= pointLimit);
+		const historyId = this.state.lastSavedHistoryId;
 
 		this.state = {
 			...this.state,
@@ -99,19 +108,18 @@ class HeartsStore {
 			rounds,
 			status: isGameOver ? 'completed' : 'in_progress',
 			updatedAt: new Date().toISOString(),
-			winnerName: isGameOver ? [...players].sort((a, b) => a.totalScore - b.totalScore)[0].name : null
+			winnerName: isGameOver ? [...players].sort((a, b) => a.totalScore - b.totalScore)[0].name : null,
+			lastSavedHistoryId: null
 		};
 
-		if (this.lastSavedHistoryId) {
-			removeCompletedGameFromHistory(this.lastSavedHistoryId);
-			this.lastSavedHistoryId = null;
+		if (historyId) {
+			removeCompletedGameFromHistory(historyId);
 		}
 
 		return true;
 	}
 
 	reset() {
-		this.lastSavedHistoryId = null;
 		this.state = null;
 	}
 }

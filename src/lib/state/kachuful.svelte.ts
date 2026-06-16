@@ -7,7 +7,6 @@ const INITIAL_STATE: KachufulGameState | null = null;
 
 class KachufulStore {
 	private persisted = createLocalStorageState<KachufulGameState | null>('kachuful_game', INITIAL_STATE);
-	private lastSavedHistoryId: string | null = null;
 
 	get state() { return this.persisted.value; }
 	set state(v) { this.persisted.value = v; }
@@ -17,7 +16,6 @@ class KachufulStore {
 	}
 
 	startGame(playerNames: string[], deckCount: number, negativePenalty: number = 0) {
-		this.lastSavedHistoryId = null;
 		const maxCards = Math.floor((52 * deckCount) / playerNames.length);
 		this.state = {
 			id: crypto.randomUUID(),
@@ -34,7 +32,8 @@ class KachufulStore {
 			maxCards,
 			totalRounds: maxCards * 2 - 1,
 			winnerName: null,
-			negativePenalty
+			negativePenalty,
+			lastSavedHistoryId: null
 		};
 	}
 
@@ -57,6 +56,17 @@ class KachufulStore {
 		});
 
 		const isGameOver = this.state.currentRound >= this.state.totalRounds;
+		let historyId = this.state.lastSavedHistoryId;
+
+		if (isGameOver) {
+			historyId = saveToHistory({ 
+				...this.state, 
+				players: updatedPlayers,
+				status: 'completed',
+				winnerName: [...updatedPlayers].sort((a, b) => b.totalScore - a.totalScore)[0].name,
+				gameType: 'kachuful' 
+			}).id;
+		}
 
 		this.state = {
 			...this.state,
@@ -64,12 +74,9 @@ class KachufulStore {
 			currentRound: isGameOver ? this.state.currentRound : this.state.currentRound + 1,
 			status: isGameOver ? 'completed' : 'in_progress',
 			updatedAt: new Date().toISOString(),
-			winnerName: isGameOver ? [...updatedPlayers].sort((a, b) => b.totalScore - a.totalScore)[0].name : null
+			winnerName: isGameOver ? [...updatedPlayers].sort((a, b) => b.totalScore - a.totalScore)[0].name : null,
+			lastSavedHistoryId: historyId
 		};
-
-		if (isGameOver) {
-			this.lastSavedHistoryId = saveToHistory({ ...this.state, gameType: 'kachuful' }).id;
-		}
 
 		return true;
 	}
@@ -88,36 +95,38 @@ class KachufulStore {
 			};
 		});
 
+		const historyId = this.state.lastSavedHistoryId;
+
 		this.state = {
 			...this.state,
 			players,
 			currentRound: Math.max(1, this.state.currentRound - 1),
 			status: 'in_progress',
 			updatedAt: new Date().toISOString(),
-			winnerName: null
+			winnerName: null,
+			lastSavedHistoryId: null
 		};
 
-		if (this.lastSavedHistoryId) {
-			removeCompletedGameFromHistory(this.lastSavedHistoryId);
-			this.lastSavedHistoryId = null;
+		if (historyId) {
+			removeCompletedGameFromHistory(historyId);
 		}
 
 		return true;
 	}
 
 	reset() {
-		this.lastSavedHistoryId = null;
 		this.state = null;
 	}
 
 	private isRoundValid(entries: { bid: number, tricks: number }[]): boolean {
 		if (!this.state) return false;
 
+		const totalBids = entries.reduce((sum, entry) => sum + entry.bid, 0);
 		const totalTricks = entries.reduce((sum, entry) => sum + entry.tricks, 0);
 
 		const currentCards = getCardsForRound(this.state.currentRound, this.state.maxCards);
 
-		return totalTricks === currentCards && entries.every(entry =>
+		return totalTricks === currentCards && totalBids !== currentCards && entries.every(entry =>
 			entry.bid >= 0 &&
 			entry.tricks >= 0 &&
 			entry.bid <= currentCards &&

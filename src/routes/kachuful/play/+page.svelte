@@ -1,20 +1,29 @@
 <script lang="ts">
   import { kachuful } from '$lib/state/kachuful.svelte';
-  import { getTrumpForRound, getCardsForRound } from '$lib/types/kachuful';
+  import { getTrumpForRound, getCardsForRound, getDealerIndex } from '$lib/types/kachuful';
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import ScoreBadge from '$lib/components/ScoreBadge.svelte';
   import RaceChart from '$lib/components/RaceChart.svelte';
-  import { Trophy, ArrowLeft, Plus } from '@lucide/svelte';
+  import { Trophy, ArrowLeft, Plus, AlertCircle } from '@lucide/svelte';
   import { goto } from '$app/navigation';
+  import CelebrationOverlay from '$lib/components/CelebrationOverlay.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+  import { useWakeLock } from '$lib/utils/wakeLock';
+
+  useWakeLock();
 
   if (!kachuful.state) {
     if (typeof window !== 'undefined') goto('/kachuful');
   }
 
   let roundEntries = $state(kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || []);
+  
+  let showUndoModal = $state(false);
+  let showNewGameModal = $state(false);
 
   const currentTrump = $derived(kachuful.state ? getTrumpForRound(kachuful.state.currentRound) : null);
   const currentCards = $derived(kachuful.state ? getCardsForRound(kachuful.state.currentRound, kachuful.state.maxCards) : 0);
+  const dealerIndex = $derived(kachuful.state ? getDealerIndex(kachuful.state.currentRound, kachuful.state.players.length) : -1);
 
   function addRound() {
     if (kachuful.submitRound(roundEntries)) {
@@ -23,15 +32,27 @@
     }
   }
 
+  const totalBids = $derived(roundEntries.reduce((sum, entry) => sum + entry.bid, 0));
   const totalTricks = $derived(roundEntries.reduce((sum, entry) => sum + entry.tricks, 0));
-  const isRoundValid = $derived(totalTricks === currentCards && roundEntries.every(e => e.bid <= currentCards && e.tricks <= currentCards));
+  
+  const isHookRuleViolated = $derived(totalBids === currentCards);
+  const isRoundValid = $derived(
+    totalTricks === currentCards && 
+    !isHookRuleViolated &&
+    roundEntries.every(e => e.bid <= currentCards && e.tricks <= currentCards)
+  );
 
   function undoRound() {
-    if (window.confirm('Undo the last Kachuful round?')) {
-      kachuful.undoLastRound();
-      roundEntries = kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || [];
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    kachuful.undoLastRound();
+    roundEntries = kachuful.state?.players.map(() => ({ bid: 0, tricks: 0 })) || [];
+    showUndoModal = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetGame() {
+    kachuful.reset();
+    showNewGameModal = false;
+    goto('/kachuful');
   }
 </script>
 
@@ -45,16 +66,19 @@
         <h2 class="text-title-md">Round {kachuful.state.currentRound} / {kachuful.state.totalRounds}</h2>
         <p class="text-label-sm text-text-secondary">Cards: {currentCards} • Trump: {currentTrump}</p>
       </div>
-      <div class="w-6"></div>
+      <button onclick={() => showNewGameModal = true} class="text-primary text-label-sm font-bold">
+        NEW
+      </button>
     </header>
 
     {#if kachuful.state.status === 'completed'}
-      <section class="p-8 rounded-3xl bg-gold/10 border-2 border-gold text-center space-y-4">
+      <CelebrationOverlay />
+      <section class="p-8 rounded-3xl bg-gold/10 border-2 border-gold text-center space-y-4 relative z-10">
         <Trophy size={48} class="text-gold mx-auto" />
         <h2 class="text-display-md">Winner!</h2>
         <p class="text-display-lg text-gold">{kachuful.state.winnerName}</p>
         <button
-          onclick={() => kachuful.reset()}
+          onclick={() => showNewGameModal = true}
           class="px-6 py-2 bg-gold text-background rounded-full font-bold"
         >
           New Game
@@ -62,12 +86,28 @@
       </section>
     {:else}
       <section class="space-y-6">
-        <h3 class="text-title-lg">Enter Round {kachuful.state.currentRound}</h3>
+        <div class="flex justify-between items-end">
+           <h3 class="text-title-lg">Enter Round {kachuful.state.currentRound}</h3>
+           <div class="text-right">
+             <p class="text-label-sm uppercase opacity-50">Total Bids</p>
+             <p class="text-title-md font-mono {isHookRuleViolated ? 'text-danger' : 'text-success'}">{totalBids} / {currentCards}</p>
+           </div>
+        </div>
+        
         <div class="space-y-8">
           {#each kachuful.state.players as player, i}
-            <div class="p-5 rounded-2xl bg-surface border border-border space-y-4">
+            <div 
+              class="p-5 rounded-2xl bg-surface border transition-colors space-y-4"
+              class:border-primary={i === dealerIndex}
+              class:border-border={i !== dealerIndex}
+            >
               <div class="flex justify-between items-center">
-                <span class="text-title-md font-bold">{player.name}</span>
+                <div class="flex items-center gap-2">
+                   <span class="text-title-md font-bold">{player.name}</span>
+                   {#if i === dealerIndex}
+                     <span class="text-[10px] bg-primary text-white px-2 py-0.5 rounded-full font-bold uppercase">Dealer</span>
+                   {/if}
+                </div>
                 <span class="text-label-sm text-text-secondary">Total: {player.totalScore}</span>
               </div>
               <div class="grid grid-cols-2 gap-4">
@@ -88,7 +128,7 @@
         <div class="space-y-3">
           {#if kachuful.hasSubmittedRounds}
             <button
-              onclick={undoRound}
+              onclick={() => showUndoModal = true}
               class="w-full p-4 bg-surface-variant hover:bg-surface border border-border rounded-2xl text-label-lg font-bold transition-colors"
             >
               Undo Last Round
@@ -104,7 +144,11 @@
           </button>
         </div>
 
-        {#if !isRoundValid}
+        {#if isHookRuleViolated}
+          <p class="text-center text-danger text-label-sm flex items-center justify-center gap-1 bg-danger/10 p-3 rounded-lg border border-danger/20">
+            <AlertCircle size={14} /> <strong>Hook Rule:</strong> Total bids ({totalBids}) cannot equal tricks ({currentCards}). Dealer must change bid.
+          </p>
+        {:else if !isRoundValid && totalTricks !== currentCards}
           <p class="text-center text-warning text-label-sm flex items-center justify-center gap-1">
             Total tricks must equal {currentCards} for this round.
           </p>
@@ -152,4 +196,25 @@
       </div>
     </section>
   </div>
+
+  {#if showUndoModal}
+    <Modal 
+      title="Undo Last Round?"
+      message="This will permanently remove the last round's scores."
+      confirmLabel="Yes, Undo"
+      type="danger"
+      onConfirm={undoRound}
+      onCancel={() => showUndoModal = false}
+    />
+  {/if}
+
+  {#if showNewGameModal}
+    <Modal 
+      title="Start New Game?"
+      message="Current game progress will be lost if you haven't finished."
+      confirmLabel="Start New"
+      onConfirm={resetGame}
+      onCancel={() => showNewGameModal = false}
+    />
+  {/if}
 {/if}

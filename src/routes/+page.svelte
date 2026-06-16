@@ -1,13 +1,18 @@
 <script lang="ts">
   import GameCard from '$lib/components/GameCard.svelte';
+  import ResumeDialog from '$lib/components/ResumeDialog.svelte';
   import { Spade, Heart, Drama } from '@lucide/svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Trophy, Calendar, User, ArrowRight } from '@lucide/svelte';
   import { loadGameHistory, formatCompletedDate, type CompletedGame } from '$lib/history';
+  import { kachuful } from '$lib/state/kachuful.svelte';
+  import { hearts } from '$lib/state/hearts.svelte';
+  import { traitor } from '$lib/state/traitor.svelte';
 
   const games = [
     {
+      id: 'kachuful',
       title: 'Kachuful',
       description: 'Up-and-down trick-taking card game with rotating trumps.',
       players: '2-10',
@@ -16,6 +21,7 @@
       colorClass: 'text-kachuful'
     },
     {
+      id: 'hearts',
       title: 'Hearts',
       description: 'Avoid penalty cards and the Queen of Spades. Lowest score wins.',
       players: '3-10',
@@ -24,6 +30,7 @@
       colorClass: 'text-hearts'
     },
     {
+      id: 'traitor',
       title: 'Traitor',
       description: 'Social deduction game. Find the mafia before they eliminate the town.',
       players: '5-20',
@@ -34,10 +41,52 @@
   ];
 
   let history = $state<CompletedGame[]>([]);
+  
+  // Dialog state
+  let activeGameId = $state<string | null>(null);
+  let dialogDetails = $state('');
 
   onMount(() => {
     history = loadGameHistory().slice(0, 3);
   });
+
+  function handleGameClick(e: MouseEvent, gameId: string, defaultPath: string) {
+    let details = '';
+    
+    if (gameId === 'kachuful' && kachuful.state && kachuful.state.status !== 'completed') {
+      details = `${kachuful.state.players.length} players • Round ${kachuful.state.currentRound} of ${kachuful.state.totalRounds}`;
+    } else if (gameId === 'hearts' && hearts.state && hearts.state.status !== 'completed') {
+      details = `${hearts.state.players.length} players • Round ${hearts.state.rounds.length + 1}`;
+    } else if (gameId === 'traitor' && traitor.state && traitor.state.status !== 'completed') {
+      details = `${traitor.state.players.length} players • ${traitor.state.phase} Phase`;
+    }
+
+    if (details) {
+      e.preventDefault();
+      dialogDetails = details;
+      activeGameId = gameId;
+    }
+  }
+
+  function resumeGame() {
+    if (activeGameId) {
+      if (activeGameId === 'traitor' && !traitor.state?.roleRevealComplete) {
+         goto(`/${activeGameId}/reveal`);
+      } else {
+         goto(`/${activeGameId}/play`);
+      }
+    }
+    activeGameId = null;
+  }
+
+  function startNewGame() {
+    if (activeGameId) {
+      // The individual game setup routes (+page.svelte) handle clearing the old state 
+      // when 'start' is called, but here we just navigate to setup.
+      goto(`/${activeGameId}`);
+    }
+    activeGameId = null;
+  }
 
   function roundCount(game: CompletedGame): number {
     if (game.gameType === 'traitor') return game.currentRound ?? 0;
@@ -69,9 +118,22 @@
 
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {#each games as game}
-      <GameCard {...game} />
+      <GameCard 
+        {...game} 
+        onclick={(e) => handleGameClick(e, game.id, game.path)}
+      />
     {/each}
   </div>
+
+  {#if activeGameId}
+    <ResumeDialog 
+      gameType={activeGameId}
+      details={dialogDetails}
+      onResume={resumeGame}
+      onNewGame={startNewGame}
+      onClose={() => activeGameId = null}
+    />
+  {/if}
 
   <section class="mt-12">
     <div class="flex justify-between items-center mb-4">

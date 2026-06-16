@@ -6,11 +6,13 @@ const INITIAL_STATE: TraitorGameState | null = null;
 
 class TraitorStore {
 	private persisted = createLocalStorageState<TraitorGameState | null>('traitor_game', INITIAL_STATE);
-	private undoStack: TraitorGameState[] = [];
-	private lastSavedHistoryId: string | null = null;
+	private persistedUndoStack = createLocalStorageState<TraitorGameState[]>('traitor_undo_stack', []);
 
 	get state() { return this.persisted.value; }
 	set state(v) { this.persisted.value = v; }
+
+	get undoStack() { return this.persistedUndoStack.value; }
+	set undoStack(v) { this.persistedUndoStack.value = v; }
 
 	get canUndo() {
 		return this.undoStack.length > 0;
@@ -18,7 +20,6 @@ class TraitorStore {
 
 	startGame(playerNames: string[], roleCounts: Record<TraitorRole, number>) {
 		this.undoStack = [];
-		this.lastSavedHistoryId = null;
 
 		const roles: TraitorRole[] = [];
 		Object.entries(roleCounts).forEach(([role, count]) => {
@@ -53,7 +54,8 @@ class TraitorStore {
 				detectiveInvestigateId: null
 			},
 			roleRevealIndex: 0,
-			roleRevealComplete: false
+			roleRevealComplete: false,
+			lastSavedHistoryId: null
 		};
 	}
 
@@ -77,6 +79,14 @@ class TraitorStore {
 		return true;
 	}
 
+	updateNightActions(actions: Partial<TraitorGameState['nightActions']>) {
+		if (!this.state) return;
+		this.state = {
+			...this.state,
+			nightActions: { ...this.state.nightActions, ...actions }
+		};
+	}
+
 	eliminatePlayer(id: string, method: 'vote' | 'kill'): boolean {
 		if (!this.state) return false;
 		const player = this.state.players.find(player => player.id === id);
@@ -93,27 +103,31 @@ class TraitorStore {
 		return true;
 	}
 
-	executeNight(mafiaTargetId: string | null, doctorProtectId: string | null, detectiveInvestigateId: string | null): string | null {
+	executeNight(): string | null {
 		if (!this.state) return null;
 
 		this.pushUndoSnapshot();
 
+		const { mafiaTargetId, doctorProtectId } = this.state.nightActions;
 		let eliminatedId: string | null = null;
+		
+		let updatedPlayers = [...this.state.players];
+
 		if (mafiaTargetId && mafiaTargetId !== doctorProtectId) {
 			const target = this.state.players.find(player => player.id === mafiaTargetId && player.isAlive);
 			if (target) {
 				eliminatedId = target.id;
-				const updatedPlayers = this.state.players.map(p =>
+				updatedPlayers = this.state.players.map(p =>
 					p.id === eliminatedId
 						? { ...p, isAlive: false, eliminatedBy: 'kill' as const, eliminatedRound: this.state!.currentRound, isProtected: false }
 						: p
 				);
-				this.state = { ...this.state, players: updatedPlayers };
 			}
 		}
 
 		this.state = {
 			...this.state,
+			players: updatedPlayers,
 			currentRound: this.state.currentRound + 1,
 			phase: 'day',
 			nightActions: { mafiaTargetId: null, doctorProtectId: null, detectiveInvestigateId: null }
@@ -126,14 +140,16 @@ class TraitorStore {
 	undoLastAction(): boolean {
 		if (this.undoStack.length === 0) return false;
 
-		const previousState = this.undoStack.pop();
+		const previousState = this.undoStack[this.undoStack.length - 1];
+		this.undoStack = this.undoStack.slice(0, -1);
+		
 		if (!previousState) return false;
 
+		const historyId = this.state?.lastSavedHistoryId;
 		this.state = this.cloneState(previousState);
 
-		if (this.state.status !== 'completed' && this.lastSavedHistoryId) {
-			removeCompletedGameFromHistory(this.lastSavedHistoryId);
-			this.lastSavedHistoryId = null;
+		if (historyId) {
+			removeCompletedGameFromHistory(historyId);
 		}
 
 		return true;
@@ -141,13 +157,12 @@ class TraitorStore {
 
 	reset() {
 		this.undoStack = [];
-		this.lastSavedHistoryId = null;
 		this.state = null;
 	}
 
 	private pushUndoSnapshot() {
 		if (!this.state) return;
-		this.undoStack.push(this.cloneState(this.state));
+		this.undoStack = [...this.undoStack, this.cloneState(this.state)];
 	}
 
 	private cloneState(state: TraitorGameState): TraitorGameState {
@@ -171,8 +186,8 @@ class TraitorStore {
 		}
 
 		if (status === 'completed') {
-			this.lastSavedHistoryId = saveToHistory({ ...this.state, winner, status, gameType: 'traitor' }).id;
-			this.state = { ...this.state, winner, status };
+			const savedGame = saveToHistory({ ...this.state, winner, status, gameType: 'traitor' });
+			this.state = { ...this.state, winner, status, lastSavedHistoryId: savedGame.id };
 		}
 	}
 }
