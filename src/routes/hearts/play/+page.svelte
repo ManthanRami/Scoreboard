@@ -51,6 +51,10 @@
     moonShooterIndex = moonShooterIndex === index ? null : index;
   }
 
+  function addPoints(index: number, points: number) {
+    roundScores[index] = Math.min(maxRoundPoints, roundScores[index] + points);
+  }
+
   const isRoundValid = $derived(moonShooterIndex !== null || currentTotal === maxRoundPoints);
 </script>
 
@@ -121,6 +125,17 @@
                   </div>
                   <div class="w-40">
                     <PlayerStepper bind:value={roundScores[i]} min={0} max={maxRoundPoints} />
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    {#each [1, 5, 10, 13] as points}
+                      <button
+                        onclick={() => addPoints(i, points)}
+                        disabled={roundScores[i] >= maxRoundPoints}
+                        class="rounded-lg border border-border bg-background px-3 py-2 text-label-sm font-bold text-text-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:border-primary/50 hover:text-primary"
+                      >
+                        +{points}
+                      </button>
+                    {/each}
                   </div>
                 </div>
               {/each}
