@@ -16,8 +16,6 @@
     if (typeof window !== 'undefined') goto('/traitor');
   }
 
-  let showRoles = $state(false);
-  let showDetectiveResult = $state(false);
   let showNightToast = $state(false);
   let nightToastMessage = $state('');
   let showVoteModal = $state(false);
@@ -32,8 +30,8 @@
 
   const phaseButtons = [
     ['day', Sun, 'Day'] as const,
-    ['voting', Vote, 'Vote'] as const,
-    ['night', Moon, 'Night'] as const
+    ['night', Moon, 'Night'] as const,
+    ['voting', Vote, 'Vote'] as const
   ] satisfies Array<[TraitorGameState['phase'], Component, string]>;
 
   function handleNight() {
@@ -43,7 +41,6 @@
       ? `${traitor.state?.players.find(p => p.id === eliminatedId)?.name} was killed tonight.`
       : 'Nobody was killed tonight. The doctor might have saved someone.';
     showNightToast = true;
-    showDetectiveResult = false;
   }
 
   function handleVote(id: string) {
@@ -95,9 +92,7 @@
           <span class="text-success text-label-sm font-bold">Town: {aliveTown}</span>
         </div>
       </div>
-      <button onclick={() => showRoles = !showRoles} class="text-primary">
-        {#if showRoles} <EyeOff size={24} /> {:else} <Eye size={24} /> {/if}
-      </button>
+      <div class="w-6"></div>
     </header>
 
     {#if traitor.state.status === 'completed'}
@@ -222,18 +217,7 @@
               {#if detectiveResult}
                 <div class="mt-4 p-4 bg-primary/10 rounded-xl border border-primary/20 text-center space-y-3">
                    <p class="text-label-sm uppercase tracking-wider opacity-70">Investigation Result</p>
-                   {#if !showDetectiveResult}
-                     <button 
-                       onpointerdown={() => showDetectiveResult = true}
-                       onpointerup={() => showDetectiveResult = false}
-                       onpointerleave={() => showDetectiveResult = false}
-                       class="w-full py-3 bg-primary text-white rounded-lg font-bold text-sm"
-                     >
-                       Hold to Reveal Result
-                     </button>
-                   {:else}
-                     <p class="text-display-md font-bold animate-in zoom-in duration-200">{detectiveResult}</p>
-                   {/if}
+                   <p class="text-display-md font-bold animate-in zoom-in duration-200">{detectiveResult}</p>
                 </div>
               {/if}
             </div>
@@ -270,11 +254,9 @@
                 {/if}
               </div>
 
-              {#if showRoles || !player.isAlive}
-                <p class="text-label-sm font-bold {player.role === TraitorRole.Mafia ? 'text-danger' : 'text-success'}">
-                  {player.role}
-                </p>
-              {/if}
+              <p class="text-label-sm font-bold {player.role === TraitorRole.Mafia ? 'text-danger' : 'text-success'}">
+                {player.role}
+              </p>
 
               {#if traitor.state.phase === 'voting' && player.isAlive}
                 <button
