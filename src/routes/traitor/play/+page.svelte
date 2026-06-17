@@ -177,7 +177,7 @@
             <div class="space-y-2">
               <label class="text-label-sm text-danger flex items-center gap-1"><UserMinus size={14}/> Mafia Kills</label>
               <select 
-                value={traitor.state.nightActions.mafiaTargetId} 
+                value={traitor.state.nightActions.mafiaTargetId ?? ''} 
                 onchange={(e) => traitor.updateNightActions({ mafiaTargetId: e.currentTarget.value || null })}
                 class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
               >
@@ -191,7 +191,7 @@
             <div class="space-y-2">
               <label class="text-label-sm text-success flex items-center gap-1"><ShieldCheck size={14}/> Doctor Protects</label>
               <select 
-                value={traitor.state.nightActions.doctorProtectId}
+                value={traitor.state.nightActions.doctorProtectId ?? ''}
                 onchange={(e) => traitor.updateNightActions({ doctorProtectId: e.currentTarget.value || null })}
                 class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
               >
@@ -205,7 +205,7 @@
             <div class="space-y-2">
               <label class="text-label-sm text-primary flex items-center gap-1"><Search size={14}/> Detective Checks</label>
               <select 
-                value={traitor.state.nightActions.detectiveInvestigateId}
+                value={traitor.state.nightActions.detectiveInvestigateId ?? ''}
                 onchange={(e) => traitor.updateNightActions({ detectiveInvestigateId: e.currentTarget.value || null })}
                 class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
               >
