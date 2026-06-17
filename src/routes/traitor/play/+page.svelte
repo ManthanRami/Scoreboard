@@ -182,7 +182,7 @@
                 class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
               >
                 <option value="">Select Target</option>
-                {#each alivePlayers as p}
+                {#each alivePlayers.filter(p => p.role !== TraitorRole.Mafia) as p}
                   <option value={p.id}>{p.name}</option>
                 {/each}
               </select>
@@ -210,7 +210,7 @@
                 class="w-full bg-background border-border rounded-xl p-3 text-body-md focus:ring-primary"
               >
                 <option value="">Select Target</option>
-                {#each alivePlayers as p}
+                {#each alivePlayers.filter(p => p.role !== TraitorRole.Detective) as p}
                   <option value={p.id}>{p.name}</option>
                 {/each}
               </select>
