@@ -1,10 +1,13 @@
 <script lang="ts">
   import { kachuful } from '$lib/state/kachuful.svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
   import Modal from '$lib/components/Modal.svelte';
-  import { ArrowRight, Trash2 } from '@lucide/svelte';
+  import ShareAppModal from '$lib/components/ShareAppModal.svelte';
+  import { ArrowRight, Trash2, Share2 } from '@lucide/svelte';
+  import { onMount } from 'svelte';
 
   let playerCount = $state(4);
   let deckCount = $state(1);
@@ -13,6 +16,29 @@
   let playerNames = $state(['Rahul', 'Priya', 'Amit', 'Sara']);
   let showOverwriteModal = $state(false);
   let showResetModal = $state(false);
+  let showShareModal = $state(false);
+
+  onMount(() => {
+    const rulesParam = $page.url.searchParams.get('rules');
+    if (rulesParam) {
+      try {
+        const decoded = atob(rulesParam);
+        const rules = JSON.parse(decoded);
+        if (rules.p) playerCount = rules.p;
+        if (rules.d) deckCount = rules.d;
+        if (rules.n !== undefined) negativePenalty = rules.n;
+        if (rules.s) scoringVariant = rules.s;
+        if (rules.names) playerNames = rules.names;
+        
+        // Remove the query parameter without refreshing the page
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('rules');
+        window.history.replaceState({}, '', newUrl);
+      } catch (e) {
+        console.error('Invalid rules in URL');
+      }
+    }
+  });
 
   $effect(() => {
     if (playerNames.length < playerCount) {
@@ -52,19 +78,40 @@
 
   const maxCards = $derived(Math.floor((52 * deckCount) / playerCount));
   const totalRounds = $derived(maxCards * 2 - 1);
+
+  const shareRulesUrl = $derived(() => {
+    const rules = {
+      p: playerCount,
+      d: deckCount,
+      n: negativePenalty,
+      s: scoringVariant,
+      names: playerNames
+    };
+    const encoded = btoa(JSON.stringify(rules));
+    return `${window.location.origin}/kachuful?rules=${encoded}`;
+  });
 </script>
 
 <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
   <div class="flex justify-between items-center">
     <h2 class="text-display-md">Kachuful</h2>
-    {#if kachuful.state}
+    <div class="flex gap-2 items-center">
       <button 
-        onclick={() => goto('/kachuful/play')}
-        class="text-label-lg text-primary flex items-center gap-2"
+        onclick={() => showShareModal = true}
+        class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        title="Share these Home Rules"
       >
-        Resume Game <ArrowRight size={16} />
+        <Share2 size={20} />
       </button>
-    {/if}
+      {#if kachuful.state}
+        <button 
+          onclick={() => goto('/kachuful/play')}
+          class="text-label-lg text-primary flex items-center gap-2"
+        >
+          Resume <ArrowRight size={16} />
+        </button>
+      {/if}
+    </div>
   </div>
 
   <section class="space-y-4">
@@ -159,6 +206,13 @@
       type="danger"
       onConfirm={resetGame}
       onCancel={() => showResetModal = false}
+    />
+  {/if}
+
+  {#if showShareModal}
+    <ShareAppModal 
+      url={shareRulesUrl()} 
+      onClose={() => showShareModal = false} 
     />
   {/if}
 </div>
