@@ -53,7 +53,7 @@ class KachufulStore {
 
 			if (scoringVariant === 'double-digit') {
 				if (isMatched) {
-					score = bid === 0 ? 10 : bid * 11;
+					score = bid === 0 ? 5 : bid * 11;
 				} else {
 					score = bid === 0 ? -5 : -(bid * 11);
 				}

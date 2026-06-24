@@ -6,7 +6,7 @@
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
   import Modal from '$lib/components/Modal.svelte';
   import ShareAppModal from '$lib/components/ShareAppModal.svelte';
-  import { ArrowRight, Trash2, Share2 } from '@lucide/svelte';
+  import { ArrowRight, Trash2, Share2, Info } from '@lucide/svelte';
   import { onMount } from 'svelte';
 
   let playerCount = $state(4);
@@ -143,7 +143,7 @@
       <div class="p-4 bg-primary/10 rounded-xl border border-primary/20">
         <p class="text-body-sm italic text-primary text-center">
           <b>High Stakes:</b> Make N > 0 to get +NN (e.g. 11, 22). Miss N to get -NN. 
-          Make 0 to get +10. Miss 0 to get -5.
+          Make 0 to get +5. Miss 0 to get -5.
         </p>
       </div>
     {/if}
@@ -165,9 +165,12 @@
     </div>
   </section>
 
-  <section class="p-6 rounded-2xl bg-surface-variant border border-border">
-    <h3 class="text-label-lg text-text-secondary mb-4">Game Summary</h3>
-    <div class="grid grid-cols-2 gap-y-2 text-body-md">
+  <section class="p-6 rounded-2xl bg-surface-variant border border-border space-y-3">
+    <div class="flex items-center gap-2 text-primary">
+      <Info size={18} />
+      <h3 class="text-label-lg font-bold">Game Summary</h3>
+    </div>
+    <div class="grid grid-cols-2 gap-y-2 text-body-md pt-1">
       <span>Max cards/round:</span>
       <span class="text-right text-text-primary font-bold">{maxCards}</span>
       <span>Total rounds:</span>
@@ -175,6 +178,9 @@
       <span>Trump order:</span>
       <span class="text-right text-text-primary font-bold">♠ ♦ ♣ ♥</span>
     </div>
+    <a href="/rules/kachuful" class="text-label-sm text-primary hover:underline flex items-center gap-1 mt-2">
+      Read complete rules guide <ArrowRight size={12} />
+    </a>
   </section>
 
   <button 

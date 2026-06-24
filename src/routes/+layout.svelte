@@ -2,6 +2,7 @@
   import './layout.css';
   import BottomNav from '$lib/components/BottomNav.svelte';
   import ShareAppModal from '$lib/components/ShareAppModal.svelte';
+  import { theme } from '$lib/state/theme.svelte';
   import { pwaInfo } from 'virtual:pwa-info';
   import { onMount } from 'svelte';
   import { QrCode } from '@lucide/svelte';

@@ -113,9 +113,11 @@
         <div class="space-y-8">
           {#each kachuful.state.players as player, i}
             <div 
-              class="p-5 rounded-2xl bg-surface border transition-colors space-y-4"
-              class:border-primary={i === dealerIndex}
-              class:border-border={i !== dealerIndex}
+              class="p-5 rounded-2xl bg-surface border transition-all space-y-4 {
+                roundEntries[i].bid > 0 
+                  ? (i === dealerIndex ? 'border-primary bg-warning/10 ring-2 ring-warning/30 scale-[1.01] shadow-md' : 'border-warning bg-warning/10 scale-[1.01] shadow-md')
+                  : (i === dealerIndex ? 'border-primary' : 'border-border')
+              }"
             >
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -133,7 +135,7 @@
               <div class="flex justify-end">
                 {#if roundEntries[i].bid === roundEntries[i].tricks}
                   <ScoreBadge 
-                    score="+{kachuful.state.scoringVariant === 'double-digit' ? (roundEntries[i].bid === 0 ? 10 : roundEntries[i].bid * 11) : (10 + roundEntries[i].bid)}" 
+                    score="+{kachuful.state.scoringVariant === 'double-digit' ? (roundEntries[i].bid === 0 ? 5 : roundEntries[i].bid * 11) : (10 + roundEntries[i].bid)}" 
                     status="success" 
                   />
                 {:else}

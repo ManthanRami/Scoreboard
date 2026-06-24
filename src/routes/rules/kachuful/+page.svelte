@@ -58,7 +58,7 @@
       <p>A popular, highly aggressive variant used by experienced groups:</p>
       <ul>
         <li><strong>Bid N > 0:</strong> Make it for +NN points (e.g. bid 2 = 22 pts). Miss it for -NN points.</li>
-        <li><strong>Bid 0:</strong> Make it for +10 points. Miss it for -5 points.</li>
+        <li><strong>Bid 0:</strong> Make it for +5 points. Miss it for -5 points.</li>
       </ul>
       
       <p><em>Scoreboard Hub supports both Standard and High Stakes variants automatically.</em></p>

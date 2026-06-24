@@ -44,4 +44,28 @@ describe('kachuful store', () => {
 		expect(kachuful.state?.players[0].totalScore).toBe(0);
 		expect(kachuful.state?.players[0].rounds).toHaveLength(0);
 	});
+
+	it('scores double-digit (High Stakes) variant correctly including zero bids', () => {
+		kachuful.startGame(['Asha', 'Ben'], 1, 0, 'double-digit');
+
+		expect(kachuful.submitRound([
+			{ bid: 0, tricks: 0 }, // Asha makes bid of 0 -> +5 points
+			{ bid: 0, tricks: 1 }  // Ben misses bid of 0 -> -5 points
+		])).toBe(true);
+
+		expect(kachuful.state?.players[0].totalScore).toBe(5);
+		expect(kachuful.state?.players[1].totalScore).toBe(-5);
+
+		// Start another game with bids > 0
+		kachuful.reset();
+		kachuful.startGame(['Asha', 'Ben'], 2, 0, 'double-digit');
+		
+		expect(kachuful.submitRound([
+			{ bid: 1, tricks: 1 }, // Asha makes bid of 1 -> +11 points
+			{ bid: 1, tricks: 0 }  // Ben misses bid of 1 -> -11 points
+		])).toBe(true);
+
+		expect(kachuful.state?.players[0].totalScore).toBe(11);
+		expect(kachuful.state?.players[1].totalScore).toBe(-11);
+	});
 });

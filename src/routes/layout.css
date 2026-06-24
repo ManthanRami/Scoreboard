@@ -56,3 +56,38 @@
     @apply text-sm font-medium uppercase tracking-wider;
   }
 }
+
+/* Theme Swapper Overrides */
+:root.theme-casino {
+  --color-background: #0d2c16;
+  --color-surface: #143e22;
+  --color-surface-variant: #1a512d;
+  --color-primary: #ffd700;
+  --color-primary-dark: #ccab00;
+  --color-border: #226437;
+  --color-text-primary: #f0fff4;
+  --color-text-secondary: #8ebb9e;
+}
+
+:root.theme-cyberpunk {
+  --color-background: #0c0813;
+  --color-surface: #190f26;
+  --color-surface-variant: #28183d;
+  --color-primary: #00f0ff;
+  --color-primary-dark: #00b0cc;
+  --color-border: #3b225d;
+  --color-text-primary: #ffe6ff;
+  --color-text-secondary: #b592e6;
+}
+
+:root.theme-light {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-variant: #f1f5f9;
+  --color-primary: #4f46e5;
+  --color-primary-dark: #3730a3;
+  --color-border: #e2e8f0;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #64748b;
+}
+

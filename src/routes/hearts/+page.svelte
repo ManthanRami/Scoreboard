@@ -99,6 +99,9 @@
       <li>Q♠ = 13 pts per deck.</li>
       <li>Shoot the moon to give everyone else max points!</li>
     </ul>
+    <a href="/rules/hearts" class="text-label-sm text-hearts hover:underline flex items-center gap-1 mt-2">
+      Read complete rules guide <ArrowRight size={12} />
+    </a>
   </section>
 
   <button 

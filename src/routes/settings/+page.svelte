@@ -3,6 +3,7 @@
   import { User, Download, Trash2, Smartphone, Moon, Sun, Code, Info, ArrowRight } from '@lucide/svelte';
   import Modal from '$lib/components/Modal.svelte';
   import Toast from '$lib/components/Toast.svelte';
+  import { theme, type Theme } from '$lib/state/theme.svelte';
 
   let displayName = $state('Player One');
   let installPrompt: any = null;
@@ -89,6 +90,46 @@
   </section>
 
   <section class="space-y-4">
+    <h3 class="text-label-lg text-text-secondary uppercase">Appearance</h3>
+    <div class="p-6 rounded-2xl bg-surface border border-border space-y-4">
+      <div class="flex items-center gap-3 mb-2">
+        <div class="p-2 bg-primary/10 text-primary rounded-lg">
+          {#if theme.current === 'light'}
+            <Sun size={20} />
+          {:else}
+            <Moon size={20} />
+          {/if}
+        </div>
+        <span class="text-title-md">App Theme</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {#each [
+          { id: 'default', name: 'Deep Navy', bg: 'bg-[#0f0f1a]', accent: 'bg-[#6c63ff]', text: 'text-[#f0f0ff]' },
+          { id: 'casino', name: 'Green Felt', bg: 'bg-[#0d2c16]', accent: 'bg-[#ffd700]', text: 'text-[#f0fff4]' },
+          { id: 'cyberpunk', name: 'Cyberpunk', bg: 'bg-[#0c0813]', accent: 'bg-[#00f0ff]', text: 'text-[#ffe6ff]' },
+          { id: 'light', name: 'Light Slate', bg: 'bg-[#f8fafc]', accent: 'bg-[#4f46e5]', text: 'text-[#0f172a]', border: 'border-slate-200' }
+        ] as t}
+          <button
+            onclick={() => theme.setTheme(t.id as Theme)}
+            class="p-4 rounded-xl border transition-all text-left flex flex-col justify-between h-24 relative overflow-hidden active:scale-95 {theme.current === t.id ? 'border-primary ring-2 ring-primary/20 scale-[1.02]' : 'border-border hover:border-text-secondary/30'}"
+          >
+            <!-- Miniature preview -->
+            <div class="w-full h-8 rounded-md {t.bg} {t.border || 'border-border/30'} border flex items-center justify-between px-2 py-1">
+              <span class="w-2 h-2 rounded-full {t.accent}"></span>
+              <span class="text-[9px] font-bold {t.text}">12</span>
+            </div>
+            
+            <div class="mt-2">
+              <p class="text-label-sm font-bold truncate">{t.name}</p>
+            </div>
+          </button>
+        {/each}
+      </div>
+    </div>
+  </section>
+
+  <section class="space-y-4">
     <h3 class="text-label-lg text-text-secondary uppercase">Application</h3>
     <div class="space-y-3">
       <button 
@@ -101,14 +142,6 @@
         </div>
         <ArrowRight size={18} class="text-text-secondary" />
       </button>
-
-      <div class="w-full p-4 rounded-2xl bg-surface border border-border flex items-center justify-between opacity-50">
-        <div class="flex items-center gap-3">
-          <div class="p-2 bg-text-secondary/10 text-text-secondary rounded-lg"><Moon size={20} /></div>
-          <span class="text-title-md">Theme (Coming soon)</span>
-        </div>
-        <div class="w-12 h-6 bg-surface-variant rounded-full"></div>
-      </div>
     </div>
   </section>
 

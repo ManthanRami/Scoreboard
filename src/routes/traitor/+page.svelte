@@ -5,7 +5,7 @@
   import PlayerStepper from '$lib/components/PlayerStepper.svelte';
   import PlayerNameInput from '$lib/components/PlayerNameInput.svelte';
   import Modal from '$lib/components/Modal.svelte';
-  import { ArrowRight, Trash2, ShieldAlert } from '@lucide/svelte';
+  import { ArrowRight, Trash2, ShieldAlert, Info } from '@lucide/svelte';
 
   let playerCount = $state(8);
   let mafiaCount = $state(2);
@@ -102,6 +102,22 @@
         <PlayerNameInput bind:name={playerNames[i]} index={i} />
       {/each}
     </div>
+  </section>
+
+  <section class="p-6 rounded-2xl bg-surface-variant border border-border space-y-3">
+    <div class="flex items-center gap-2 text-traitor">
+      <Info size={18} />
+      <h3 class="text-label-lg font-bold">Quick Rules</h3>
+    </div>
+    <ul class="text-body-md space-y-1 opacity-80 list-disc list-inside">
+      <li>Moderator-run pass-and-play role reveal.</li>
+      <li>Night Phase: Mafia kills, Detective investigates, Doctor protects.</li>
+      <li>Day Phase: Discuss and vote to eliminate suspects.</li>
+      <li>Mafia wins if they outnumber Town. Town wins if all Mafia die.</li>
+    </ul>
+    <a href="/rules/traitor" class="text-label-sm text-traitor hover:underline flex items-center gap-1 mt-2">
+      Read complete moderator guide <ArrowRight size={12} />
+    </a>
   </section>
 
   <button 
